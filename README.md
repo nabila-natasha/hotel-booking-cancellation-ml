@@ -2,158 +2,311 @@
 
 ## Project Overview
 
-This project builds a machine learning classifier that estimates the probability that a hotel booking will be cancelled.
+This project develops a machine learning classifier that estimates the probability that a hotel booking will be cancelled.
 
-The goal is to demonstrate an end-to-end machine learning workflow: exploratory data analysis, data cleaning, model comparison and tuning, a prediction API, containerization, and deployment.
+The goal is to demonstrate an end-to-end machine learning workflow, covering exploratory data analysis, data cleaning, model development, hyperparameter tuning, model training, prediction, API development and automated testing.
 
 **Project status**
 
 | Stage | Status |
 |---|---|
-| Data audit, cleaning and EDA (`01_eda_cleaning.ipynb`) | Done |
-| Modelling and tuning (`02_modelling.ipynb`) | In progress |
-| Training script, prediction API | Not started |
-| Docker and cloud deployment | Not started |
-
-Sections marked "to be added" below will be completed as each stage is finished.
+| Data audit, cleaning and EDA | Completed |
+| Model development and hyperparameter tuning | Completed |
+| Model training script and saved model artifact | Completed |
+| Prediction function | Completed |
+| Flask prediction API | Completed |
+| API automated tests | Completed (2 tests passing) |
+| Docker containerization | Planned |
+| Cloud deployment | Planned |
 
 ## Business Problem
 
-Hotel cancellations affect room availability, revenue planning and operational decisions. A cancellation-risk model could help a hotel's revenue-management team identify bookings that may need attention, for example by requiring a deposit, sending a reminder, or planning overbooking more carefully.
+Hotel cancellations affect room availability, revenue planning and operational decisions.
 
-**Intended use:** support booking-risk assessment and planning. Predictions are estimates, not guarantees, and should not be the only basis for decisions that affect customers.
+A cancellation-risk model could help a hotel's revenue-management team identify bookings that may need attention. Potential actions include sending booking reminders, reviewing deposit policies or planning room availability more carefully.
 
-**Prediction point:** the model predicts cancellation risk **at the moment a booking is created**, so it only uses information the hotel would know at that time.
+**Intended use:** Support booking-risk assessment and operational planning. Predictions are estimates, not guarantees, and should not be the sole basis for decisions affecting customers.
+
+**Prediction point:** The model estimates cancellation risk using the booking information supplied at prediction time. In a real deployment, the hotel would need to ensure that each input feature is available when the prediction is made.
 
 ## Dataset
 
-- **Dataset:** Hotel Booking Demand (city and resort hotel in Portugal, bookings arriving 2015-2017)
+- **Dataset:** Hotel Booking Demand, covering a city hotel and a resort hotel in Portugal.
 - **Source:** [TidyTuesday, 11 February 2020](https://github.com/rfordatascience/tidytuesday/blob/main/data/2020/2020-02-11/readme.md)
-- **Original research:** Antonio, Almeida and Nunes (2019), *Hotel booking demand datasets*, Data in Brief, 22, 41-49.
-- **Prediction target:** `is_canceled` (1 = cancelled, 0 = not cancelled)
-- **Size:** 119,390 rows and 32 columns in the raw file; 84,392 rows and 27 columns after cleaning.
+- **Original research:** Antonio, Almeida and Nunes (2019), *Hotel booking demand datasets*, Data in Brief, 22, 41–49.
+- **Prediction target:** `is_canceled` (1 = cancelled, 0 = not cancelled).
+- **Raw dataset:** 119,390 rows and 32 columns.
+- **Cleaned dataset:** 84,392 rows and 27 columns.
 
 | File | Description |
 |---|---|
-| `data/raw/hotels.csv` | Original file, unchanged |
-| `data/processed/hotels_clean.csv` | Output of `01_eda_cleaning.ipynb`, the input to `02_modelling.ipynb` |
+| `data/raw/hotels.csv` | Original dataset |
+| `data/processed/hotels_clean.csv` | Cleaned dataset used for modelling |
 
-If `data/raw/hotels.csv` is missing, the first notebook downloads it from the TidyTuesday repository.
+If the raw dataset is unavailable, the first notebook downloads it from the TidyTuesday repository.
 
 ## Data Cleaning Decisions
 
-Each decision is explained with evidence in `01_eda_cleaning.ipynb` (sections 5 to 7).
+The decisions below are documented with supporting analysis in `notebooks/01_eda_cleaning.ipynb`.
 
-| Issue | What I found | Decision |
+| Issue | Finding | Decision |
 |---|---|---|
-| Outcome leakage | `reservation_status` matches the target exactly; `reservation_status_date` is recorded after the outcome | Dropped both |
-| Information known only after booking | `booking_changes` and `assigned_room_type` are set later; `required_car_parking_spaces` had 0 cancellations in 7,416 raw bookings that had parking | Dropped all three |
-| Duplicate rows | About 34,000 exact duplicates (about 28%) after removing the columns above | Dropped, keeping the first copy, so identical rows cannot end up in both train and test |
-| Missing `company` (94%) | Missing most likely means "no company" | Created `has_company` (0/1), dropped the original column |
-| Missing `agent` (14%) | Mostly direct and corporate bookings, likely "no agent" | Filled with `0`, treated as a category, not a number |
-| Missing `country` (0.5%) and `children` (4 rows) | Small | Filled with `"unknown"` and `0` |
-| Invalid or extreme values | About 760 rows with zero guests, zero nights, negative or extreme price (above 1000), or extreme guest counts | Dropped |
+| Outcome leakage | `reservation_status` matches the target; `reservation_status_date` is recorded after the outcome | Dropped both columns |
+| Information recorded after booking | `booking_changes`, `assigned_room_type` and `required_car_parking_spaces` may contain information unavailable at the intended prediction point | Dropped these columns |
+| Duplicate rows | Approximately 34,000 exact duplicates after removing the leakage and post-booking columns | Removed duplicates, keeping the first occurrence |
+| Missing `company` values | Approximately 94% missing | Created `has_company` as a binary feature and dropped the original column |
+| Missing `agent` values | Approximately 14% missing | Filled with `0` and treated as a categorical feature |
+| Missing `country` and `children` values | Small number of missing values | Filled with `"unknown"` and `0`, respectively |
+| Invalid or extreme values | Records with invalid guest counts, zero-night stays, negative prices or extreme values | Removed affected records |
 
-## Exploratory Data Analysis: Takeaways
+## Exploratory Data Analysis: Key Findings
 
-- 27.9% of cleaned bookings were cancelled, so a model that always predicts "not cancelled" would be right 72% of the time without catching any cancellation. Models are therefore judged with ROC-AUC, precision and recall, not accuracy alone.
-- Cancellation varies most with lead time (days between booking and arrival), booking channel (online travel agencies have the highest rate), country, and the number of special requests.
-- Whether these patterns help predict cancellations is tested in the modelling notebook.
+- Approximately 27.9% of cleaned bookings were cancelled.
+- A model that always predicts "not cancelled" would achieve approximately 72.1% accuracy without identifying any cancellations.
+- Cancellation patterns vary with lead time, booking channel, country and the number of special requests.
+- These patterns were investigated further during model development.
 
 ## Machine Learning Workflow
 
-1. Data audit, cleaning and EDA (done).
-2. Train, validation and test split (60/20/20, fixed random seed).
-3. Preprocessing in a reproducible scikit-learn pipeline.
-4. Baseline with a dummy classifier.
-5. Comparison of logistic regression, decision tree and random forest.
-6. Hyperparameter tuning and model selection.
-7. Final evaluation on the test set using ROC-AUC, precision, recall and a confusion matrix.
-8. Saving the fitted pipeline.
-9. Serving predictions through a web API.
-10. Containerizing the service with Docker.
-11. Cloud deployment.
+The project follows these steps:
 
-**Model results: to be added after the experiments are finished.**
+1. Data audit, cleaning and exploratory data analysis.
+2. Stratified train, validation and test split (60/20/20).
+3. Feature preprocessing using `DictVectorizer`.
+4. Baseline model development.
+5. Tree-based model development and comparison.
+6. XGBoost hyperparameter tuning using cross-validation.
+7. Model evaluation using classification metrics, including ROC-AUC, precision and recall.
+8. Saving the trained model and preprocessing object.
+9. Loading the saved artifact for individual booking predictions.
+10. Exposing predictions through a Flask REST API.
+11. Automated API testing with pytest.
+12. Docker containerization and cloud deployment (planned).
+
+### Model and Training
+
+The selected model uses XGBoost with a binary logistic objective.
+
+The training script saves the model, fitted `DictVectorizer` and classification threshold together in:
+
+`models/xgboost_model.bin`
+
+This allows the prediction application to reuse the same fitted preprocessing and model without retraining.
+
+The selected threshold is 0.5.
+
+Detailed modelling experiments and evaluation are documented in `notebooks/02_modelling.ipynb`.
+
+## Prediction API
+
+A Flask application exposes two endpoints:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Checks whether the API is running |
+| `/predict` | POST | Accepts a booking as JSON and returns a cancellation prediction |
+
+Example prediction response:
+
+```json
+{
+  "cancellation_probability": 0.1132,
+  "is_canceled": false,
+  "threshold": 0.5
+}
+```
+
+The probability represents the model's estimated cancellation risk. The Boolean prediction is determined by comparing that probability with the selected threshold.
 
 ## Repository Structure
 
 ```text
 hotel-booking-cancellation-ml/
-├── README.md
-├── requirements.txt
-├── .gitignore
+│
 ├── data/
 │   ├── raw/
 │   │   └── hotels.csv
 │   └── processed/
 │       └── hotels_clean.csv
+│
+├── models/
+│   └── xgboost_model.bin
+│
 ├── notebooks/
 │   ├── 01_eda_cleaning.ipynb
-│   └── 02_modelling.ipynb        (in progress)
-├── src/                          (to be added)
+│   └── 02_modelling.ipynb
+│
+├── src/
 │   ├── train.py
 │   ├── predict.py
-│   └── serve.py
-├── models/                       (to be added)
-├── tests/                        (to be added)
-└── Dockerfile                    (to be added)
+│   ├── app.py
+│   └── predict-test.py
+│
+├── tests/
+│   └── test_app.py
+│
+├── test_data/
+│   └── booking_01.json
+│
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── .dockerignore
+└── Dockerfile
 ```
+
+Docker-related files will be added when containerization is completed.
 
 ## Running the Project
 
-### 1. Set up the environment
+The following instructions are intended for someone reviewing or reproducing the project locally.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git
+
+cd hotel-booking-cancellation-ml
+```
+
+### 2. Create and activate a virtual environment
 
 Python 3.10 or newer is recommended.
 
-```bash
-git clone https://github.com/<your-username>/hotel-booking-cancellation-ml.git
-cd hotel-booking-cancellation-ml
+**Windows PowerShell**
 
+```powershell
 python -m venv .venv
+
+.\.venv\Scripts\Activate.ps1
 ```
 
-Activate the environment:
+**Linux / macOS / GitHub Codespaces**
 
 ```bash
-# Linux / macOS / GitHub Codespaces
+python -m venv .venv
+
 source .venv/bin/activate
-
-# Windows (PowerShell)
-.venv\Scripts\Activate.ps1
 ```
 
-Install the dependencies:
+### 3. Install dependencies
 
 ```bash
+python -m pip install --upgrade pip
+
 pip install -r requirements.txt
 ```
 
-### 2. Run the notebooks
+The `.venv` directory is intentionally excluded from version control. Each user should create their own environment using the instructions above.
+
+### 4. Run the notebooks
+
+From the project root:
 
 ```bash
-cd notebooks
 jupyter notebook
 ```
 
-Run the notebooks **in order**, from the `notebooks/` folder, with *Restart and Run All*:
+Run the notebooks in order:
 
-1. `01_eda_cleaning.ipynb` reads `data/raw/hotels.csv` and writes `data/processed/hotels_clean.csv`.
-2. `02_modelling.ipynb` reads `data/processed/hotels_clean.csv`. The cleaned file is committed, so this notebook also runs on its own.
+1. `notebooks/01_eda_cleaning.ipynb` — performs data cleaning and EDA.
+2. `notebooks/02_modelling.ipynb` — performs model development, evaluation and tuning.
 
-### 3. Training, API and Docker
+The cleaned dataset is available under `data/processed/`, so the modelling notebook can also be run independently if that file is present.
 
-To be added once the implementation is tested.
+### 5. Train the model
+
+From the project root:
+
+```bash
+python src/train.py
+```
+
+This trains the model and saves the resulting artifact to:
+
+```text
+models/xgboost_model.bin
+```
+
+The prediction API uses this saved artifact and does not retrain the model when it starts.
+
+### 6. Run the prediction API
+
+Start the Flask application:
+
+```bash
+python src/app.py
+```
+
+The API runs locally on:
+
+```text
+http://localhost:9696
+```
+
+### 7. Check the API health endpoint
+
+Open another terminal and run:
+
+```bash
+curl http://localhost:9696/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### 8. Submit a booking prediction
+
+Using the example booking JSON file:
+
+**Windows PowerShell**
+
+```powershell
+curl.exe -X POST http://localhost:9696/predict `
+  -H "Content-Type: application/json" `
+  --data-binary "@test_data/booking_01.json"
+```
+
+**Linux / macOS**
+
+```bash
+curl -X POST http://localhost:9696/predict \
+  -H "Content-Type: application/json" \
+  --data-binary "@test_data/booking_01.json"
+```
+
+The API returns the cancellation probability, predicted class and classification threshold.
+
+### 9. Run automated tests
+
+From the project root:
+
+```bash
+python -m pytest tests -v
+```
+
+The tests currently cover:
+
+- The health endpoint response.
+- The prediction endpoint response and basic output validation.
+
+Current result: **2 tests passed**.
 
 ## Limitations
 
-- The data are historical bookings from two hotels in Portugal (2015-2017) and may not reflect current demand or customer behaviour. Seasonal patterns come from about two years of data.
-- Performance on historical data does not guarantee performance on future bookings.
-- There is no booking ID, so duplicates are identified by identical column values. Some may be separate real bookings, for example several identical rooms booked together.
-- `total_of_special_requests` may be updated after booking, so it may not be fully available at booking creation.
-- Non-refundable bookings are cancelled 95% of the time, a pattern this data does not explain.
-- Model quality, calibration and the decision threshold will be evaluated before suggesting any operational use.
+- The dataset contains historical bookings from two hotels in Portugal between 2015 and 2017. It may not reflect current demand or customer behaviour.
+- Model performance on historical data does not guarantee performance on future bookings.
+- The dataset does not contain a booking ID, so duplicates are identified using identical column values. Some identical records may represent separate real bookings.
+- `total_of_special_requests` may be updated after the original booking is created. Its availability must be considered when defining the actual prediction point.
+- Non-refundable bookings have a very high cancellation rate in this dataset. This relationship requires further investigation before operational interpretation.
+- Model calibration, threshold selection and performance on new data would need further evaluation before real-world use.
+- This is a portfolio and learning project, not a production-validated hotel decision system.
 
 ## Author
 
-Developed as a machine learning portfolio and learning project for the DataTalks.Club ML Zoomcamp (midterm project).
+Developed as a machine learning portfolio project for the [DataTalks.Club Machine Learning Zoomcamp](https://github.com/DataTalksClub/machine-learning-zoomcamp), as part of the midterm project.
