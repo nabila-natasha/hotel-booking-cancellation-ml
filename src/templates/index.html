@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hotel Cancellation Risk Predictor</title>
+
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>Hotel Cancellation Predictor</h1>
+        <p>Machine Learning | Booking Risk Analytics</p>
+    </header>
+
+    <main class="container">
+
+        <div class="intro">
+            <h2>Booking Risk Assessment</h2>
+            <p>Enter the booking details below to estimate the probability of cancellation.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('booking_prediction') }}">
+
+            <!-- SECTION 1: HOTEL & ARRIVAL -->
+            <section class="form-card">
+                <h3 class="section-title"><span>01</span> Hotel & Arrival Details</h3>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label>Hotel Type</label>
+                        <select name="hotel">
+                            <option value="city_hotel">City Hotel</option>
+                            <option value="resort_hotel">Resort Hotel</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Arrival Date</label>
+                        <input
+                            type="date"
+                            name="arrival_date"
+                            id="arrival_date"
+                            value="2026-11-15"
+                            required
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label>Booking Entry Date</label>
+                        <input
+                            type="date"
+                            name="booking_date"
+                            id="booking_date"
+                            value="{{ today }}"
+                            required
+                        >
+                        <span class="help">Date the booking was entered into the PMS.</span>
+                    </div>
+
+                    <div class="field">
+                        <label>Lead Time (Days)</label>
+                        <input
+                            type="number"
+                            id="lead_time_display"
+                            value="0"
+                            readonly
+                        >
+                        <span class="help">Automatically calculated from booking and arrival dates.</span>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 2: GUESTS & STAY -->
+            <section class="form-card">
+                <h3 class="section-title"><span>02</span> Guests & Stay Information</h3>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label>Adults</label>
+                        <input type="number" name="adults" value="2">
+                    </div>
+
+                    <div class="field">
+                        <label>Children</label>
+                        <input type="number" name="children" value="0" step="0.1">
+                    </div>
+
+                    <div class="field">
+                        <label>Babies</label>
+                        <input type="number" name="babies" value="0">
+                    </div>
+
+                    <div class="field">
+                        <label>Weekend Nights</label>
+                        <input type="number" name="stays_in_weekend_nights" value="1">
+                    </div>
+
+                    <div class="field">
+                        <label>Week Nights</label>
+                        <input type="number" name="stays_in_week_nights" value="3">
+                    </div>
+
+                    <div class="field">
+                        <label>Meal Plan</label>
+                        <select name="meal">
+                            <option value="bb">Bed & Breakfast</option>
+                            <option value="fb">Full Board</option>
+                            <option value="hb">Half Board</option>
+                            <option value="sc">Self Catering</option>
+                            <option value="undefined">No Meal</option>
+                        </select>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 3: BOOKING INFORMATION -->
+            <section class="form-card">
+                <h3 class="section-title"><span>03</span> Booking Information</h3>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label>Guest Country</label>
+                        <select name="country">
+                            <option value="prt" selected>Portugal (PRT)</option>
+                            <option value="mys">Malaysia (MYS)</option>
+                            <option value="gbr">United Kingdom (GBR)</option>
+                            <option value="usa">United States (USA)</option>
+                            <option value="deu">Germany (DEU)</option>
+                            <option value="fra">France (FRA)</option>
+                            <option value="esp">Spain (ESP)</option>
+                            <option value="ita">Italy (ITA)</option>
+                            <option value="nld">Netherlands (NLD)</option>
+                            <option value="bel">Belgium (BEL)</option>
+                            <option value="che">Switzerland (CHE)</option>
+                            <option value="aut">Austria (AUT)</option>
+                            <option value="irl">Ireland (IRL)</option>
+                            <option value="pol">Poland (POL)</option>
+                            <option value="swe">Sweden (SWE)</option>
+                            <option value="nor">Norway (NOR)</option>
+                            <option value="dnk">Denmark (DNK)</option>
+                            <option value="fin">Finland (FIN)</option>
+                            <option value="grc">Greece (GRC)</option>
+                            <option value="tur">Türkiye (TUR)</option>
+                            <option value="chn">China (CHN)</option>
+                            <option value="jpn">Japan (JPN)</option>
+                            <option value="kor">South Korea (KOR)</option>
+                            <option value="ind">India (IND)</option>
+                            <option value="idn">Indonesia (IDN)</option>
+                            <option value="sgp">Singapore (SGP)</option>
+                            <option value="tha">Thailand (THA)</option>
+                            <option value="aus">Australia (AUS)</option>
+                            <option value="nzl">New Zealand (NZL)</option>
+                            <option value="bra">Brazil (BRA)</option>
+                            <option value="arg">Argentina (ARG)</option>
+                            <option value="mex">Mexico (MEX)</option>
+                            <option value="can">Canada (CAN)</option>
+                            <option value="zaf">South Africa (ZAF)</option>
+                            <option value="are">United Arab Emirates (ARE)</option>
+                            <option value="sau">Saudi Arabia (SAU)</option>
+                            <option value="isr">Israel (ISR)</option>
+                            <option value="egy">Egypt (EGY)</option>
+                        </select>
+                        <span class="help">Select the guest's country of origin.</span>
+                    </div>
+
+                    <div class="field">
+                        <label>Market Segment</label>
+                        <select name="market_segment">
+                            <option value="online_ta">Online Travel Agent</option>
+                            <option value="offline_ta/to">Offline Travel Agent</option>
+                            <option value="direct">Direct</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="groups">Groups</option>
+                            <option value="complementary">Complementary</option>
+                            <option value="aviation">Aviation</option>
+                            <option value="undefined">Undefined</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Distribution Channel</label>
+                        <select name="distribution_channel">
+                            <option value="ta/to">Travel Agent / Tour Operator</option>
+                            <option value="direct">Direct</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="gds">Global Distribution System</option>
+                            <option value="undefined">Undefined</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="adr">Average Daily Rate (ADR) — Price per Night ($)</label>
+                        <input
+                            type="number"
+                            id="adr"
+                            name="adr"
+                            value="100"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+                        <span class="help">
+                            Average lodging revenue per occupied night.
+                        </span>
+                    </div>
+
+                    <div class="field">
+                        <label>Special Requests</label>
+                        <input type="number" name="total_of_special_requests" value="1">
+                    </div>
+
+                    <div class="field">
+                        <label>Days in Waiting List</label>
+                        <input type="number" name="days_in_waiting_list" value="0">
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 4: RESERVATION HISTORY -->
+            <section class="form-card">
+                <h3 class="section-title"><span>04</span> Reservation History</h3>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label>Repeated Guest?</label>
+                        <select name="is_repeated_guest">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Previous Cancellations</label>
+                        <input type="number" name="previous_cancellations" value="0">
+                    </div>
+
+                    <div class="field">
+                        <label>Previous Non-Cancelled Bookings</label>
+                        <input type="number" name="previous_bookings_not_canceled" value="0">
+                    </div>
+
+                    <div class="field">
+                        <label>Customer Type</label>
+                        <select name="customer_type">
+                            <option value="transient">Transient</option>
+                            <option value="transient-party">Transient Party</option>
+                            <option value="contract">Contract</option>
+                            <option value="group">Group</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Company Booking?</label>
+                        <select name="has_company">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Agent ID</label>
+                        <input type="number" name="agent" value="0">
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 5: ROOM & PAYMENT -->
+            <section class="form-card">
+                <h3 class="section-title"><span>05</span> Room & Payment Details</h3>
+
+                <div class="form-grid">
+
+                    <div class="field">
+                        <label>Reserved Room Type</label>
+                        <select name="reserved_room_type">
+                            <option value="a">Room A</option>
+                            <option value="b">Room B</option>
+                            <option value="c">Room C</option>
+                            <option value="d">Room D</option>
+                            <option value="e">Room E</option>
+                            <option value="f">Room F</option>
+                            <option value="g">Room G</option>
+                            <option value="h">Room H</option>
+                            <option value="l">Room L</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Deposit Type</label>
+                        <select name="deposit_type">
+                            <option value="no_deposit">No Deposit</option>
+                            <option value="non_refund">Non-refundable</option>
+                            <option value="refundable">Refundable</option>
+                        </select>
+                    </div>
+
+                </div>
+            </section>
+
+            <div class="action-area">
+                <button type="submit" class="predict-button">
+                    Predict Cancellation Risk →
+                </button>
+            </div>
+
+        </form>
+
+        <!-- PREDICTION RESULT -->
+        <section class="result-card">
+            <h3>Prediction Result</h3>
+
+            {% if error %}
+                <div class="result-placeholder">
+                    <strong>Unable to generate prediction</strong>
+                    <br>
+                    {{ error }}
+                </div>
+
+            {% elif prediction %}
+                <div class="result-placeholder">
+                    <h2>
+                        {{ "%.1f"|format(prediction.cancellation_probability * 100) }}%
+                    </h2>
+
+                    <p>Estimated cancellation probability</p>
+
+                    {% if prediction.is_canceled %}
+                        <strong>Predicted Status: Likely to Cancel</strong>
+                    {% else %}
+                        <strong>Predicted Status: Likely to Not Cancel</strong>
+                    {% endif %}
+
+                    <p>Decision threshold: {{ prediction.threshold }}</p>
+                </div>
+
+            {% else %}
+                <div class="result-placeholder">
+                    <strong>Awaiting prediction</strong>
+                    <br>
+                    Cancellation probability and predicted booking status will appear here.
+                </div>
+            {% endif %}
+        </section>
+
+        <footer class="footer">
+            Hotel Booking Cancellation Prediction | Machine Learning Zoomcamp 2026
+            <br>
+            Predictions are indicative and are not booking confirmations.
+        </footer>
+
+    </main>
+
+    <script>
+        const bookingDate = document.getElementById("booking_date");
+        const arrivalDate = document.getElementById("arrival_date");
+        const leadTime = document.getElementById("lead_time_display");
+
+        function calculateLeadTime() {
+            if (!bookingDate.value || !arrivalDate.value) {
+                leadTime.value = "";
+                return;
+            }
+
+            const booking = new Date(bookingDate.value + "T00:00:00");
+            const arrival = new Date(arrivalDate.value + "T00:00:00");
+
+            const difference = arrival - booking;
+            const days = Math.round(difference / (1000 * 60 * 60 * 24));
+
+            leadTime.value = days >= 0 ? days : "";
+        }
+
+        bookingDate.addEventListener("change", calculateLeadTime);
+        arrivalDate.addEventListener("change", calculateLeadTime);
+
+        calculateLeadTime();
+    </script>
+
+</body>
+</html>

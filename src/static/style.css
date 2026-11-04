@@ -1,0 +1,232 @@
+
+/* =====================================
+   GENERAL PAGE STYLING
+===================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f3f5f9;
+    color: #263247;
+    line-height: 1.5;
+}
+
+/* =====================================
+   HEADER
+===================================== */
+
+.header {
+    background: #172b4d;
+    color: white;
+    padding: 25px 7%;
+}
+
+.header h1 {
+    font-size: 25px;
+    margin-bottom: 5px;
+}
+
+.header p {
+    color: #c4d1e3;
+    font-size: 14px;
+}
+
+/* =====================================
+   MAIN CONTAINER
+===================================== */
+
+.container {
+    max-width: 1100px;
+    margin: 35px auto;
+    padding: 0 20px;
+}
+
+.intro {
+    margin-bottom: 25px;
+}
+
+.intro h2 {
+    font-size: 23px;
+    color: #172b4d;
+    margin-bottom: 5px;
+}
+
+.intro p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* =====================================
+   FORM CARDS
+===================================== */
+
+.form-card {
+    background: white;
+    border-radius: 12px;
+    padding: 28px;
+    box-shadow: 0 4px 18px rgba(30, 50, 80, 0.06);
+    margin-bottom: 22px;
+}
+
+.section-title {
+    font-size: 17px;
+    color: #172b4d;
+    font-weight: 700;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e8edf3;
+}
+
+.section-title span {
+    display: inline-block;
+    background: #e8efff;
+    color: #315fbd;
+    border-radius: 6px;
+    padding: 4px 9px;
+    margin-right: 9px;
+    font-size: 13px;
+}
+
+/* =====================================
+   FORM GRID AND INPUTS
+===================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 7px;
+    color: #43516a;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #dce3ec;
+    border-radius: 7px;
+    font-size: 14px;
+    color: #263247;
+    background: #fff;
+    outline: none;
+}
+
+input:focus,
+select:focus {
+    border-color: #4779db;
+    box-shadow: 0 0 0 3px rgba(71, 121, 219, 0.10);
+}
+
+.help {
+    font-size: 11px;
+    color: #8a96a8;
+    margin-top: 5px;
+}
+
+/* =====================================
+   PREDICTION BUTTON
+===================================== */
+
+.action-area {
+    text-align: center;
+    padding: 12px 0 25px;
+}
+
+.predict-button {
+    background: #315fbd;
+    color: white;
+    border: none;
+    padding: 15px 35px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(49, 95, 189, 0.2);
+}
+
+.predict-button:hover {
+    background: #254d9d;
+}
+
+/* =====================================
+   PREDICTION RESULT
+===================================== */
+
+.result-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px 28px;
+    border-left: 5px solid #315fbd;
+    box-shadow: 0 4px 18px rgba(30, 50, 80, 0.06);
+    margin-bottom: 30px;
+}
+
+.result-card h3 {
+    color: #172b4d;
+    font-size: 17px;
+    margin-bottom: 8px;
+}
+
+.result-card p {
+    color: #718096;
+    font-size: 13px;
+}
+
+.result-placeholder {
+    margin-top: 15px;
+    background: #f4f7fc;
+    padding: 18px;
+    border-radius: 8px;
+    color: #718096;
+    font-size: 13px;
+}
+
+/* =====================================
+   FOOTER
+===================================== */
+
+.footer {
+    text-align: center;
+    color: #929eae;
+    font-size: 12px;
+    padding: 20px;
+}
+
+/* =====================================
+   RESPONSIVE DESIGN
+===================================== */
+
+@media (max-width: 750px) {
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-card {
+        padding: 20px;
+    }
+
+    .header h1 {
+        font-size: 21px;
+    }
+}
