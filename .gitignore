@@ -1,4 +1,3 @@
-
 # Python
 __pycache__/
 *.py[cod]
@@ -17,15 +16,20 @@ env/
 .env.*
 !.env.example
 
-# Local data and generated artifacts
+# Raw data (can be downloaded from the source)
 data/raw/*
-data/processed/*
-models/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!models/.gitkeep
+
+# Keep the processed dataset needed by the modelling notebook
+# (Do not ignore data/processed/hotels_clean.csv)
+
+# Keep the trained model needed by the prediction API
+# (Do not ignore models/xgboost_model.bin)
 
 # Test and tool caches
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Operating system
+.DS_Store
+Thumbs.db
