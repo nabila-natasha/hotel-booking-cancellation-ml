@@ -257,6 +257,12 @@ hotel-booking-cancellation-ml/
 ├── test_data/
 │   └── booking_01.json
 |   └── booking_02.json
+|
+├── screenshots/
+│   ├── 01-homepage.png
+│   ├── 02-render-deployment.PNG
+│   ├── 03-postman-prediction.PNG
+│   └── 04-health-check.PNG
 │
 ├── README.md
 ├── requirements.txt
@@ -500,21 +506,34 @@ Render free services may spin down after periods of inactivity, so the first req
 
 ## Screenshots and Deployment Evidence
 
-Screenshots demonstrating the deployed application and prediction workflow are maintained in:
+The following screenshots demonstrate the deployed application, successful model prediction and application health check.
 
-```text
-docs/images/
-```
+### 1. Interactive Web Application
 
-The evidence should include:
+The homepage provides an interactive form for entering hotel booking information.
 
-1. Hotel booking prediction homepage.
-2. Booking form with example input values.
-3. Successful prediction result.
-4. Render service showing the deployment as live.
-5. Successful health endpoint response.
+![Hotel Booking Prediction Homepage](screenshots/01-homepage.png)
 
-These screenshots demonstrate the application interface, successful prediction and cloud deployment.
+### 2. Render Cloud Deployment
+
+The Render dashboard confirms that the application has been successfully deployed.
+
+![Render Deployment](screenshots/02-render-deployment.PNG)
+
+### 3. Prediction API
+
+A successful Postman request demonstrates that the deployed API accepts booking information and returns a cancellation probability and predicted status.
+
+![Postman Prediction Result](screenshots/03-postman-prediction.PNG)
+
+### 4. Application Health Check
+
+The health endpoint confirms that the deployed application is responding successfully.
+
+![Application Health Check](screenshots/04-health-check.PNG)
+
+**Live application:** https://hotel-cancellation-api-dmr5.onrender.com/
+
 
 ## Limitations
 
