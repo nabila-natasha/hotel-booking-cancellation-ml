@@ -2,38 +2,64 @@
 
 ## Project Overview
 
-This project develops a machine learning classifier that estimates the probability that a hotel booking will be cancelled.
+This project develops an end-to-end machine learning application that estimates the probability of a hotel booking being cancelled.
 
-The goal is to demonstrate an end-to-end machine learning workflow, covering exploratory data analysis, data cleaning, model development, hyperparameter tuning, model training, prediction, API development and automated testing.
+The project demonstrates a complete machine learning workflow, including exploratory data analysis (EDA), data cleaning, feature engineering, model development, hyperparameter tuning, model evaluation, prediction, API development, web application development, automated testing, Docker containerization and cloud deployment.
 
 **Project status**
 
-| Stage | Status |
+| Component | Status |
 |---|---|
 | Data audit, cleaning and EDA | Completed |
-| Model development and hyperparameter tuning | Completed |
-| Model training script and saved model artifact | Completed |
-| Prediction function | Completed |
+| Feature engineering and model development | Completed |
+| Hyperparameter tuning and model evaluation | Completed |
+| Saved XGBoost model artifact | Completed |
 | Flask prediction API | Completed |
-| API automated tests | Completed (2 tests passing) |
-| Docker containerization | Planned |
-| Cloud deployment | Planned |
+| Interactive web application | Completed |
+| Automated API testing | Completed |
+| Docker containerization | Completed |
+| Cloud deployment using Render | Completed |
 
 ## Business Problem
 
 Hotel cancellations affect room availability, revenue planning and operational decisions.
 
-A cancellation-risk model could help a hotel's revenue-management team identify bookings that may need attention. Potential actions include sending booking reminders, reviewing deposit policies or planning room availability more carefully.
+A cancellation-risk model could help a hotel's revenue-management team identify bookings that may require attention. Potential actions include sending booking reminders, reviewing deposit policies or planning room availability more carefully.
 
-**Intended use:** Support booking-risk assessment and operational planning. Predictions are estimates, not guarantees, and should not be the sole basis for decisions affecting customers.
+**Project objective:** Develop a machine learning model that estimates cancellation probability using hotel booking information available to the prediction application.
 
-**Prediction point:** The model estimates cancellation risk using the booking information supplied at prediction time. In a real deployment, the hotel would need to ensure that each input feature is available when the prediction is made.
+The application provides:
+- An estimated cancellation probability.
+- A predicted cancellation status.
+- A configurable classification threshold stored with the model artifact.
+
+Predictions are estimates, not guarantees, and should not be the sole basis for decisions affecting customers.
+
+## Live Application
+
+The application is deployed on Render and can be accessed publicly.
+
+**Live web application:**  
+https://hotel-cancellation-api-dmr5.onrender.com/
+
+Available endpoints:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Interactive hotel booking prediction form |
+| `/health` | GET | Application health check |
+| `/predict` | POST | JSON-based cancellation prediction |
+
+The web interface allows users to enter hotel booking information and submit it to the trained model. The application displays the estimated cancellation probability and predicted booking status.
+
+The JSON API remains available for programmatic predictions and integration with other applications.
 
 ## Dataset
 
-- **Dataset:** Hotel Booking Demand, covering a city hotel and a resort hotel in Portugal.
-- **Source:** [TidyTuesday, 11 February 2020](https://github.com/rfordatascience/tidytuesday/blob/main/data/2020/2020-02-11/readme.md)
+- **Dataset:** Hotel Booking Demand.
+- **Source:** TidyTuesday, 11 February 2020.
 - **Original research:** Antonio, Almeida and Nunes (2019), *Hotel booking demand datasets*, Data in Brief, 22, 41–49.
+- **Hotels:** One city hotel and one resort hotel in Portugal.
 - **Prediction target:** `is_canceled` (1 = cancelled, 0 = not cancelled).
 - **Raw dataset:** 119,390 rows and 32 columns.
 - **Cleaned dataset:** 84,392 rows and 27 columns.
@@ -53,11 +79,11 @@ The decisions below are documented with supporting analysis in `notebooks/01_eda
 |---|---|---|
 | Outcome leakage | `reservation_status` matches the target; `reservation_status_date` is recorded after the outcome | Dropped both columns |
 | Information recorded after booking | `booking_changes`, `assigned_room_type` and `required_car_parking_spaces` may contain information unavailable at the intended prediction point | Dropped these columns |
-| Duplicate rows | Approximately 34,000 exact duplicates after removing the leakage and post-booking columns | Removed duplicates, keeping the first occurrence |
+| Duplicate rows | Approximately 34,000 exact duplicates after removing leakage and post-booking columns | Removed duplicates, keeping the first occurrence |
 | Missing `company` values | Approximately 94% missing | Created `has_company` as a binary feature and dropped the original column |
 | Missing `agent` values | Approximately 14% missing | Filled with `0` and treated as a categorical feature |
 | Missing `country` and `children` values | Small number of missing values | Filled with `"unknown"` and `0`, respectively |
-| Invalid or extreme values | Records with invalid guest counts, zero-night stays, negative prices or extreme values | Removed affected records |
+| Invalid or extreme values | Invalid guest counts, zero-night stays, negative prices or extreme values | Removed affected records |
 
 ## Exploratory Data Analysis: Key Findings
 
@@ -79,44 +105,123 @@ The project follows these steps:
 7. Model evaluation using classification metrics, including ROC-AUC, precision and recall.
 8. Saving the trained model and preprocessing object.
 9. Loading the saved artifact for individual booking predictions.
-10. Exposing predictions through a Flask REST API.
-11. Automated API testing with pytest.
-12. Docker containerization and cloud deployment (planned).
+10. Developing a Flask REST API.
+11. Building an interactive Flask web interface.
+12. Automated API testing with pytest.
+13. Docker containerization.
+14. Cloud deployment using Render.
 
 ### Model and Training
 
 The selected model uses XGBoost with a binary logistic objective.
 
-The training script saves the model, fitted `DictVectorizer` and classification threshold together in:
+The training script saves the following objects together:
+
+- Trained XGBoost model.
+- Fitted `DictVectorizer`.
+- Classification threshold.
+
+The saved artifact is located at:
 
 `models/xgboost_model.bin`
 
-This allows the prediction application to reuse the same fitted preprocessing and model without retraining.
+The prediction application loads this artifact at startup. It does not retrain the model for each prediction or when the application starts.
 
-The selected threshold is 0.5.
+The selected classification threshold is 0.5.
 
 Detailed modelling experiments and evaluation are documented in `notebooks/02_modelling.ipynb`.
 
+## Interactive Web Application
+
+The Flask application provides a browser-based interface for entering hotel booking information.
+
+The form is organised into sections:
+
+- Hotel and arrival details.
+- Guests and stay information.
+- Booking information.
+- Reservation history.
+- Room and payment details.
+
+### Lead Time Calculation
+
+Lead time represents the number of days between the date a booking is entered into the property management system and the guest's arrival date.
+
+The application accepts both dates and calculates lead time automatically:
+
+`lead_time = arrival_date - booking_date`
+
+The backend independently calculates this value before passing the booking information to the model.
+
+### Average Daily Rate (ADR)
+
+The application displays ADR as a price-per-night field.
+
+ADR represents the average lodging revenue per occupied night. The dollar symbol in the interface is a display convention; it should not be interpreted as independently verified currency metadata from the source dataset.
+
+### Prediction Result
+
+After submitting the form, the application displays:
+
+- Estimated cancellation probability.
+- Predicted booking status.
+- Classification threshold.
+
+The predicted class is determined by comparing the estimated probability with the stored threshold.
+
 ## Prediction API
 
-A Flask application exposes two endpoints:
+The Flask application exposes two API endpoints in addition to the interactive homepage.
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/health` | GET | Checks whether the API is running |
-| `/predict` | POST | Accepts a booking as JSON and returns a cancellation prediction |
+| `/health` | GET | Checks whether the application is running |
+| `/predict` | POST | Accepts booking information as JSON and returns a prediction |
 
-Example prediction response:
+Example request:
 
 ```json
 {
-  "cancellation_probability": 0.1132,
-  "is_canceled": false,
+  "hotel": "city_hotel",
+  "lead_time": 30,
+  "arrival_date_year": 2017,
+  "arrival_date_month": "july",
+  "arrival_date_week_number": 27,
+  "arrival_date_day_of_month": 15,
+  "stays_in_weekend_nights": 2,
+  "stays_in_week_nights": 3,
+  "adults": 2,
+  "children": 0,
+  "babies": 0,
+  "meal": "bb",
+  "country": "prt",
+  "market_segment": "online_ta",
+  "distribution_channel": "ta_to",
+  "is_repeated_guest": 0,
+  "previous_cancellations": 0,
+  "previous_bookings_not_canceled": 0,
+  "reserved_room_type": "a",
+  "deposit_type": "no_deposit",
+  "agent": "9",
+  "days_in_waiting_list": 0,
+  "customer_type": "transient",
+  "adr": 100.0,
+  "total_of_special_requests": 1,
+  "has_company": 0
+}
+```
+
+Example response:
+
+```json
+{
+  "cancellation_probability": 0.5711,
+  "is_canceled": true,
   "threshold": 0.5
 }
 ```
 
-The probability represents the model's estimated cancellation risk. The Boolean prediction is determined by comparing that probability with the selected threshold.
+The probability represents the model's estimated cancellation risk. The Boolean prediction is determined by comparing the probability with the selected threshold.
 
 ## Repository Structure
 
@@ -139,27 +244,31 @@ hotel-booking-cancellation-ml/
 ├── src/
 │   ├── train.py
 │   ├── predict.py
+│   ├── predict-test.py
 │   ├── app.py
-│   └── predict-test.py
+│   ├── templates/
+│   │   └── index.html
+│   └── static/
+│       └── style.css
 │
 ├── tests/
 │   └── test_app.py
 │
 ├── test_data/
 │   └── booking_01.json
+|   └── booking_02.json
 │
 ├── README.md
 ├── requirements.txt
-├── .gitignore
+├── requirements-api.txt
+├── Dockerfile
 ├── .dockerignore
-└── Dockerfile
+└── .gitignore
 ```
 
-Docker-related files will be added when containerization is completed.
+## Reproducibility: Running the Project Locally
 
-## Running the Project
-
-The following instructions are intended for someone reviewing or reproducing the project locally.
+The following instructions allow another developer or reviewer to reproduce the application locally.
 
 ### 1. Clone the repository
 
@@ -191,13 +300,21 @@ source .venv/bin/activate
 
 ### 3. Install dependencies
 
+For the full project, including notebooks and development dependencies:
+
 ```bash
 python -m pip install --upgrade pip
 
 pip install -r requirements.txt
 ```
 
-The `.venv` directory is intentionally excluded from version control. Each user should create their own environment using the instructions above.
+For the prediction application only:
+
+```bash
+pip install -r requirements-api.txt
+```
+
+The `.venv` directory is excluded from version control. Each user should create their own environment.
 
 ### 4. Run the notebooks
 
@@ -209,14 +326,14 @@ jupyter notebook
 
 Run the notebooks in order:
 
-1. `notebooks/01_eda_cleaning.ipynb` — performs data cleaning and EDA.
-2. `notebooks/02_modelling.ipynb` — performs model development, evaluation and tuning.
+1. `notebooks/01_eda_cleaning.ipynb` — data cleaning and EDA.
+2. `notebooks/02_modelling.ipynb` — model development, evaluation and tuning.
 
 The cleaned dataset is available under `data/processed/`, so the modelling notebook can also be run independently if that file is present.
 
-### 5. Train the model
+### 5. Train the model (optional)
 
-From the project root:
+If you want to reproduce model training:
 
 ```bash
 python src/train.py
@@ -228,28 +345,28 @@ This trains the model and saves the resulting artifact to:
 models/xgboost_model.bin
 ```
 
-The prediction API uses this saved artifact and does not retrain the model when it starts.
+The existing saved artifact can be used to run the application without retraining, provided it is present in the repository.
 
-### 6. Run the prediction API
+### 6. Run the Flask application
 
-Start the Flask application:
+From the project root:
 
 ```bash
 python src/app.py
 ```
 
-The API runs locally on:
+Open the application in your browser:
 
-```text
-http://localhost:9696
-```
+http://127.0.0.1:9696/
 
-### 7. Check the API health endpoint
+The application provides the interactive booking form and prediction result.
+
+### 7. Check the health endpoint
 
 Open another terminal and run:
 
 ```bash
-curl http://localhost:9696/health
+curl http://127.0.0.1:9696/health
 ```
 
 Expected response:
@@ -260,22 +377,22 @@ Expected response:
 }
 ```
 
-### 8. Submit a booking prediction
+### 8. Submit a booking prediction through the API
 
 Using the example booking JSON file:
 
 **Windows PowerShell**
 
 ```powershell
-curl.exe -X POST http://localhost:9696/predict `
+curl.exe -X POST http://127.0.0.1:9696/predict `
   -H "Content-Type: application/json" `
   --data-binary "@test_data/booking_01.json"
 ```
 
-**Linux / macOS**
+**Linux / macOS / GitHub Codespaces**
 
 ```bash
-curl -X POST http://localhost:9696/predict \
+curl -X POST http://127.0.0.1:9696/predict \
   -H "Content-Type: application/json" \
   --data-binary "@test_data/booking_01.json"
 ```
@@ -290,12 +407,114 @@ From the project root:
 python -m pytest tests -v
 ```
 
-The tests currently cover:
+The tests cover:
 
-- The health endpoint response.
-- The prediction endpoint response and basic output validation.
+- Health endpoint response.
+- Prediction endpoint response and basic output validation.
 
-Current result: **2 tests passed**.
+## Docker Containerization
+
+The application is packaged using Docker to provide a reproducible runtime environment.
+
+The Docker image includes:
+
+- Python runtime.
+- Application dependencies.
+- Flask application.
+- HTML templates and CSS.
+- Saved XGBoost model artifact.
+
+### 1. Build the Docker image
+
+From the project root:
+
+```bash
+docker build -t hotel-cancellation-app:latest .
+```
+
+### 2. Run the Docker container
+
+```bash
+docker run --rm -p 9696:9696 hotel-cancellation-app:latest
+```
+
+The application runs inside the container using Gunicorn as its production WSGI server.
+
+### 3. Access the application
+
+Open:
+
+http://localhost:9696/
+
+For GitHub Codespaces, open the forwarded port `9696` from the Ports tab and use the generated browser URL instead of `127.0.0.1`.
+
+### 4. Test the container
+
+Check:
+
+- Homepage loads successfully.
+- CSS and HTML are served correctly.
+- `/health` returns a successful response.
+- Booking form submits successfully.
+- Prediction result is displayed.
+
+## Cloud Deployment: Render
+
+The Dockerized Flask application is deployed as a Render Web Service.
+
+**Deployment platform:** Render  
+**Service name:** `hotel-cancellation-api`  
+**Public application URL:** https://hotel-cancellation-api-dmr5.onrender.com/
+
+### Deployment workflow
+
+1. Commit and push application changes to the GitHub `main` branch.
+2. Render retrieves the latest repository version.
+3. Render builds the application using the repository Dockerfile.
+4. Gunicorn starts the Flask application inside the container.
+5. The public application becomes accessible through the Render URL.
+
+### Verify the deployed application
+
+**Homepage**
+
+https://hotel-cancellation-api-dmr5.onrender.com/
+
+**Health check**
+
+https://hotel-cancellation-api-dmr5.onrender.com/health
+
+The health endpoint should return:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+**Prediction**
+
+Submit a booking through the public web interface and verify that the estimated cancellation probability and predicted status are displayed.
+
+Render free services may spin down after periods of inactivity, so the first request after inactivity can take longer to respond.
+
+## Screenshots and Deployment Evidence
+
+Screenshots demonstrating the deployed application and prediction workflow are maintained in:
+
+```text
+docs/images/
+```
+
+The evidence should include:
+
+1. Hotel booking prediction homepage.
+2. Booking form with example input values.
+3. Successful prediction result.
+4. Render service showing the deployment as live.
+5. Successful health endpoint response.
+
+These screenshots demonstrate the application interface, successful prediction and cloud deployment.
 
 ## Limitations
 
@@ -305,7 +524,7 @@ Current result: **2 tests passed**.
 - `total_of_special_requests` may be updated after the original booking is created. Its availability must be considered when defining the actual prediction point.
 - Non-refundable bookings have a very high cancellation rate in this dataset. This relationship requires further investigation before operational interpretation.
 - Model calibration, threshold selection and performance on new data would need further evaluation before real-world use.
-- This is a portfolio and learning project, not a production-validated hotel decision system.
+- The application is a portfolio and learning project, not a production-validated hotel decision system.
 
 ## Author
 
