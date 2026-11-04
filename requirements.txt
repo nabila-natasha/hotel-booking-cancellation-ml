@@ -1,16 +1,22 @@
-# Data and modelling
+# Data processing and machine learning
 pandas==3.1.0
 numpy==2.5.4
+scipy==1.18.1
 scikit-learn==1.9.1
-joblib==1.6.0
 xgboost==3.4.1
 
-# Plots and notebooks
+# Model dependencies
+joblib==1.6.0
+
+# Data visualisation and notebooks
 matplotlib==3.11.2
+seaborn==0.13.2
 jupyter==1.1.1
 
-# Web service (used from the API stage onwards)
+# API
 Flask==3.1.3
+
+# Production WSGI server
 gunicorn==26.2.0
 
 # Testing
