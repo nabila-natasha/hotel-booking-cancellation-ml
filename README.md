@@ -20,6 +20,28 @@ The project demonstrates a complete machine learning workflow, including explora
 | Docker containerization | Completed |
 | Cloud deployment using Render | Completed |
 
+## Quick Start for Reviewers
+
+| I want to... | Go to |
+|---|---|
+| Try the live app | https://hotel-cancellation-api-dmr5.onrender.com/ (free tier: the first load after inactivity can take about 1 minute) |
+| Read the data analysis | `notebooks/01_eda_cleaning.ipynb` |
+| Read the model comparison and tuning | `notebooks/02_modeling.ipynb` |
+| Run the project locally | [Reproducibility](#reproducibility-running-the-project-locally) |
+| Run the Docker container | [Docker Containerization](#docker-containerization) |
+
+Fastest local check (the install takes a few minutes):
+
+```bash
+git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git
+cd hotel-booking-cancellation-ml
+python -m venv .venv
+source .venv/bin/activate          # Windows PowerShell: .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m pytest tests -v          # expected: 2 passed
+python src/app.py                  # then open http://127.0.0.1:9696/
+```
+
 ## Business Problem
 
 Hotel cancellations affect room availability, revenue planning and operational decisions.
@@ -49,6 +71,7 @@ Available endpoints:
 | `/` | GET | Interactive hotel booking prediction form |
 | `/health` | GET | Application health check |
 | `/predict` | POST | JSON-based cancellation prediction |
+| `/booking-prediction` | POST | Form submission used by the web page (open `/` to use the form) |
 
 The web interface allows users to enter hotel booking information and submit it to the trained model. The application displays the estimated cancellation probability and predicted booking status.
 
@@ -87,10 +110,16 @@ The decisions below are documented with supporting analysis in `notebooks/01_eda
 
 ## Exploratory Data Analysis: Key Findings
 
-- Approximately 27.9% of cleaned bookings were cancelled.
-- A model that always predicts "not cancelled" would achieve approximately 72.1% accuracy without identifying any cancellations.
-- Cancellation patterns vary with lead time, booking channel, country and the number of special requests.
-- These patterns were investigated further during model development.
+- 27.9% of the cleaned bookings were cancelled. Always predicting "not cancelled" gives 72.1% accuracy but finds no cancellations.
+- **Hotel:** the city hotel has a higher cancellation rate (30.4%) than the resort hotel (23.9%).
+- **Lead time:** cancellations rise steadily with lead time, from 8.6% for bookings made 0-7 days ahead to 40.9% for bookings made more than 180 days ahead.
+- **Special requests:** bookings with no special requests are cancelled more often (34.0%) than bookings with one (22.7%) or two or more (20.4%).
+- **Booking channel:** online travel agent bookings are cancelled most often (35.5%); direct (14.8%) and corporate (12.2%) bookings least.
+- **Guest history:** repeat guests rarely cancel (8.3% vs 28.7%), but guests who cancelled before cancel again often (67.5% vs 27.1%).
+- **Deposit type:** non-refundable bookings are cancelled 95.0% of the time (991 bookings). This is a surprising pattern and is discussed in the limitations.
+- Leakage columns (for example `reservation_status`) and columns recorded after the booking were removed before modelling.
+
+(See the EDA sections of `notebooks/01_eda_cleaning.ipynb` for the charts and tables behind these findings.)
 
 ## Machine Learning Workflow
 
@@ -152,7 +181,9 @@ XGBoost has the highest validation ROC-AUC, so it was selected as the final mode
 | F1 at threshold 0.5 | 0.689 |
 | Accuracy at threshold 0.5 | 0.838 (always predicting "not cancelled" gives 0.721) |
 
-Precision, recall, F1 and PR-AUC are for the deployed model on the same test set. Retraining gives slightly different values because XGBoost uses random subsampling, so expect small differences (about 0.001 in ROC-AUC).
+All values in the first table come from `notebooks/02_modeling.ipynb` (final model trained on the training and validation data, evaluated once on the test set), except the `src/train.py` row.
+
+The notebook (0.9039) and `src/train.py` (0.9045) differ slightly because the notebook uses `agent` as a number, while `train.py` treats it as a text category (it is an ID). The deployed model is the one trained by `src/train.py`. Retraining also gives slightly different values because XGBoost uses random subsampling.
 
 ### Threshold
 
@@ -219,7 +250,7 @@ The Flask application exposes two API endpoints in addition to the interactive h
 | `/health` | GET | Checks whether the application is running |
 | `/predict` | POST | Accepts booking information as JSON and returns a prediction |
 
-Example request:
+Example request (the same booking as `test_data/booking_02.json`):
 
 ```json
 {
@@ -264,6 +295,21 @@ Example response for this request (the exact probability can differ slightly if 
 
 The probability represents the model's estimated cancellation risk. The Boolean prediction is determined by comparing the probability with the selected threshold.
 
+## Project Files
+
+| File | Purpose |
+|---|---|
+| `notebooks/01_eda_cleaning.ipynb` | Data audit, cleaning decisions, EDA; writes `data/processed/hotels_clean.csv` |
+| `notebooks/02_modeling.ipynb` | Train/validation/test split, model comparison, tuning, final evaluation |
+| `src/train.py` | The final training steps from notebook 02 as a script: same split (`random_state=42`), same preprocessing and XGBoost parameters; saves `models/xgboost_model.bin` |
+| `src/predict.py` | Loads the saved artifact and predicts for one booking |
+| `src/predict-test.py` | Sends an example booking through the prediction code |
+| `src/app.py` | Flask app: web form, `/predict` API and `/health` |
+| `tests/test_app.py` | pytest tests for `/health` and `/predict` |
+| `requirements.txt` | All packages for notebooks, training, app and tests (exact versions) |
+| `requirements-api.txt` | Only the packages needed to run the app; used by the Dockerfile to keep the image small |
+| `Dockerfile` | Builds the container image used locally and on Render |
+
 ## Repository Structure
 
 ```text
@@ -296,14 +342,15 @@ hotel-booking-cancellation-ml/
 │   └── test_app.py
 │
 ├── test_data/
-│   └── booking_01.json
-|   └── booking_02.json
-|
+│   ├── booking_01.json
+│   └── booking_02.json
+│
 ├── screenshots/
 │   ├── 01-homepage.png
 │   ├── 02-render-deployment.PNG
 │   ├── 03-postman-prediction.PNG
-│   └── 04-health-check.PNG
+│   ├── 04-health-check.PNG
+│   └── 05-docker-postman-prediction.PNG
 │
 ├── README.md
 ├── requirements.txt
@@ -327,7 +374,7 @@ cd hotel-booking-cancellation-ml
 
 ### 2. Create and activate a virtual environment
 
-This project was tested with Python 3.13 (the Docker image uses Python 3.14). Use Python 3.13 or newer so the pinned package versions install without problems.
+This project was developed and tested with Python 3.14.2 in GitHub Codespaces, and the Docker image also uses Python 3.14. The pinned packages in `requirements.txt` also install and pass the tests on Python 3.13. Use Python 3.13 or newer.
 
 **Windows PowerShell**
 
@@ -382,7 +429,7 @@ Run time: notebook 01 takes about 15 seconds and notebook 02 takes about 10-15 m
 
 **Running the notebooks in GitHub Codespaces or from the downloaded ZIP:** open the project folder, create the virtual environment, install `requirements.txt`, and select the `.venv` kernel. The notebooks use relative paths (`../data/...`), so they must be run from the `notebooks/` folder, which is the default in Jupyter.
 
-**Running the notebooks in Google Colab:** uncomment the first code cell of each notebook (`!git clone ...` and `%cd ...`) and run it first. Colab has its own pre-installed package versions, so also run `%pip install xgboost==3.4.1` if XGBoost is missing. Colab shows text columns with the dtype `object`, while the pinned pandas version shows `str`. The notebooks check for non-numeric columns, so they work with both, and `hotels_clean.csv` is identical in both environments.
+**Running the notebooks in Google Colab:** uncomment the first code cell of each notebook (`!git clone ...` and `%cd ...`) and run it first. Colab has its own pre-installed package versions, so also run `%pip install xgboost==3.4.1` if XGBoost is missing. Colab shows text columns with the dtype `object`, while the pinned pandas version shows `str`. The notebooks check for non-numeric columns instead of a specific dtype, so they work with both. Running notebook 01 with pandas 2.2 (which shows `object`) and with the pinned pandas 3.1 produced an identical `hotels_clean.csv`.
 
 ### 5. Train the model (optional)
 
@@ -399,6 +446,12 @@ models/xgboost_model.bin
 ```
 
 The existing saved artifact can be used to run the application without retraining, provided it is present in the repository.
+
+Retraining overwrites `models/xgboost_model.bin`. XGBoost uses random subsampling, so a retrained model can give slightly different probabilities (in the later decimals) from the numbers shown in this README, and a booking close to the 0.5 threshold could change class. This is expected. To restore the original model, run:
+
+```bash
+git checkout models/xgboost_model.bin
+```
 
 ### 6. Run the Flask application
 
@@ -450,7 +503,15 @@ curl -X POST http://127.0.0.1:9696/predict \
   --data-binary "@test_data/booking_02.json"
 ```
 
-The API returns the cancellation probability, predicted class and classification threshold.
+The API returns the cancellation probability, predicted class and classification threshold. With the saved model in this repository, `booking_02.json` returns:
+
+```json
+{
+  "cancellation_probability": 0.5058664679527283,
+  "is_canceled": true,
+  "threshold": 0.5
+}
+```
 
 ### 9. Run automated tests
 
@@ -460,6 +521,8 @@ From the project root:
 python -m pytest tests -v
 ```
 
+Expected result: `2 passed`.
+
 The tests cover:
 
 - Health endpoint response.
@@ -468,6 +531,13 @@ The tests cover:
 ## Docker Containerization
 
 The application is packaged using Docker to provide a reproducible runtime environment.
+
+The `Dockerfile` does the following:
+
+1. Starts from the `python:3.14-slim` base image.
+2. Installs the packages in `requirements-api.txt`.
+3. Copies `src/` (the app) and `models/` (the trained model) into the image.
+4. Starts the app with Gunicorn on the port given by the `PORT` environment variable (Render sets it), or 9696 when it is not set.
 
 The Docker image includes:
 
@@ -503,7 +573,7 @@ For GitHub Codespaces, open the forwarded port `9696` from the Ports tab and use
 
 ### 4. Test the Dockerized API using Postman
 
-The Dockerized application was tested through Postman using the forwarded GitHub Codespaces port.
+The Dockerized application was built and tested in GitHub Codespaces (Docker 29.9.2) and called through Postman using the forwarded port.
 
 **Request configuration:**
 
@@ -582,13 +652,12 @@ Render free services may spin down after periods of inactivity, so the first req
 
 ## Model Prediction Consistency Validation
 
-The application was tested across local Python execution and Docker
-containerization to verify that the same booking information produces
+The application was tested with local Python execution, Docker containerization and the Render deployment to verify that the same booking information produces
 consistent predictions across environments.
 
 ### Test Scenario
 
-The same 26-feature hotel booking payload was used for both tests.
+The same 26-feature hotel booking payload (`test_data/booking_02.json`) was used for all three tests.
 
 The test booking produced the following result:
 
@@ -604,11 +673,9 @@ The test booking produced the following result:
 |---|---|---|
 | Local Python | `python src/predict-test.py` | Passed |
 | Docker | Postman POST request to `/predict` | Passed |
-| Render | Postman POST request to `/predict` | Passed |
+| Render | Postman POST request to `/predict` (screenshot 3) | Passed |
 
-The local Python and Docker predictions returned identical cancellation probabilities, classification results and thresholds.
-
-Render validation will use the same request payload to verify that the deployed application returns the expected prediction.
+The local Python, Docker and Render predictions returned identical cancellation probabilities, classification results and thresholds. All three use the same saved model file, so identical results are expected.
 
 
 ## Screenshots and Deployment Evidence
@@ -631,7 +698,7 @@ The Render dashboard confirms that the application has been successfully deploye
 
 ### 3. Prediction API
 
-A successful Postman request demonstrates that the deployed API accepts booking information and returns a cancellation probability and predicted status.
+A successful Postman request to the live Render URL (`/predict`) demonstrates that the deployed API accepts booking information and returns a cancellation probability (0.5058664679527283) and predicted status.
 
 ![Postman Prediction Result](screenshots/03-postman-prediction.PNG)
 
