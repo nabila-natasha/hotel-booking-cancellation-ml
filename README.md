@@ -99,10 +99,10 @@ The project follows these steps:
 1. Data audit, cleaning and exploratory data analysis.
 2. Stratified train, validation and test split (60/20/20).
 3. Feature preprocessing using `DictVectorizer`.
-4. Baseline model development.
-5. Tree-based model development and comparison.
-6. XGBoost hyperparameter tuning using cross-validation.
-7. Model evaluation using classification metrics, including ROC-AUC, precision and recall.
+4. Training and tuning four model types: logistic regression, decision tree, random forest and XGBoost.
+5. Comparing the models on the validation set using ROC-AUC and selecting XGBoost.
+6. XGBoost hyperparameter tuning using 5-fold cross-validation.
+7. Final evaluation on the held-out test set using ROC-AUC, precision and recall.
 8. Saving the trained model and preprocessing object.
 9. Loading the saved artifact for individual booking predictions.
 10. Developing a Flask REST API.
@@ -127,21 +127,62 @@ The saved artifact is located at:
 
 The prediction application loads this artifact at startup. It does not retrain the model for each prediction or when the application starts.
 
-The selected classification threshold is 0.5.
+### Model Comparison
 
-Detailed modelling experiments and evaluation are documented in `notebooks/02_modelling.ipynb`.
+Four model types were trained on the same training data and compared on the validation set. Each model was tuned over a small set of hyperparameters.
+
+| Model | Tuned hyperparameters | Best setting | Validation ROC-AUC |
+|---|---|---|---|
+| **XGBoost** | `eta`, `max_depth`, `min_child_weight`, `subsample`, `colsample_bytree` (5-fold CV) | eta 0.1, max_depth 8, min_child_weight 1, subsample 0.8, colsample_bytree 0.8, 223 rounds | **0.8979** |
+| Random forest | `n_estimators`, `max_depth` | 300 trees, max_depth 25 | 0.8768 |
+| Decision tree | `max_depth`, `min_samples_leaf` | max_depth 10, min_samples_leaf 20 | 0.8728 |
+| Logistic regression | `C` | C = 10 | 0.8061 |
+
+XGBoost has the highest validation ROC-AUC, so it was selected as the final model. It was then retrained on the training and validation data and evaluated once on the test set.
+
+### Results
+
+| Measure | Value |
+|---|---|
+| Test ROC-AUC (notebook) | 0.9039 |
+| Test ROC-AUC (`src/train.py`) | 0.9045 |
+| Test PR-AUC | 0.7898 |
+| Precision at threshold 0.5 | 0.743 |
+| Recall at threshold 0.5 | 0.643 |
+| F1 at threshold 0.5 | 0.689 |
+| Accuracy at threshold 0.5 | 0.838 (always predicting "not cancelled" gives 0.721) |
+
+Precision, recall, F1 and PR-AUC are for the deployed model on the same test set. Retraining gives slightly different values because XGBoost uses random subsampling, so expect small differences (about 0.001 in ROC-AUC).
+
+### Threshold
+
+The selected classification threshold is 0.5. At this threshold about 74% of the bookings flagged as "likely to cancel" are really cancelled (precision), and about 64% of all cancellations are found (recall). A lower threshold finds more cancellations but raises more false alarms (for example at 0.3: recall about 0.83, precision about 0.63). A hotel can change the threshold stored in the model artifact to match its own costs.
+
+Detailed modelling experiments and evaluation are documented in `notebooks/02_modeling.ipynb`.
 
 ## Interactive Web Application
 
 The Flask application provides a browser-based interface for entering hotel booking information.
 
-The form is organised into sections:
+The form follows a hotel reservation layout with four sections and a live reservation summary:
 
-- Hotel and arrival details.
-- Guests and stay information.
-- Booking information.
-- Reservation history.
-- Room and payment details.
+1. **Stay:** hotel, check-in, check-out and booking entry date.
+2. **Guests:** adults, children, babies, country, customer type and guest history.
+3. **Room and rate:** room type, meal plan, rate per night, deposit and special requests.
+4. **Booking source:** market segment, agent, company booking and waiting-list days.
+
+Some values are calculated automatically, so users do not enter them:
+
+| Calculated value | How it is calculated |
+|---|---|
+| Number of nights, weekend nights and week nights | From check-in and check-out (a weekend night is a Saturday or Sunday night) |
+| Lead time | Check-in date minus booking entry date |
+| Repeat guest | Yes if the guest has any previous bookings or cancellations |
+| Distribution channel | The usual channel for the chosen market segment in the training data |
+| Estimated room total | Rate per night multiplied by the number of nights |
+| Arrival year, month, week number and day | From the check-in date (done by the backend) |
+
+The form keeps its values after a prediction and checks the dates before submitting.
 
 ### Lead Time Calculation
 
@@ -151,20 +192,20 @@ The application accepts both dates and calculates lead time automatically:
 
 `lead_time = arrival_date - booking_date`
 
-The backend independently calculates this value before passing the booking information to the model.
+The backend calculates this value again before passing the booking information to the model.
 
 ### Average Daily Rate (ADR)
 
-The application displays ADR as a price-per-night field.
+The application shows ADR as a rate-per-night field.
 
-ADR represents the average lodging revenue per occupied night. The dollar symbol in the interface is a display convention; it should not be interpreted as independently verified currency metadata from the source dataset.
+ADR represents the average lodging revenue per occupied night. The dataset does not state the currency, so the interface shows no currency symbol.
 
 ### Prediction Result
 
 After submitting the form, the application displays:
 
-- Estimated cancellation probability.
-- Predicted booking status.
+- Estimated cancellation probability, with a bar showing the decision threshold.
+- Risk level (low or high).
 - Classification threshold.
 
 The predicted class is determined by comparing the estimated probability with the stored threshold.
@@ -182,42 +223,42 @@ Example request:
 
 ```json
 {
-  "hotel": "city_hotel",
-  "lead_time": 30,
-  "arrival_date_year": 2017,
-  "arrival_date_month": "july",
-  "arrival_date_week_number": 27,
-  "arrival_date_day_of_month": 15,
-  "stays_in_weekend_nights": 2,
-  "stays_in_week_nights": 3,
-  "adults": 2,
-  "children": 0,
-  "babies": 0,
-  "meal": "bb",
-  "country": "prt",
-  "market_segment": "online_ta",
-  "distribution_channel": "ta_to",
-  "is_repeated_guest": 0,
-  "previous_cancellations": 0,
-  "previous_bookings_not_canceled": 0,
-  "reserved_room_type": "a",
-  "deposit_type": "no_deposit",
-  "agent": "9",
-  "days_in_waiting_list": 0,
-  "customer_type": "transient",
-  "adr": 100.0,
-  "total_of_special_requests": 1,
-  "has_company": 0
+    "hotel": "resort_hotel",
+    "lead_time": 120,
+    "arrival_date_year": 2025,
+    "arrival_date_month": "july",
+    "arrival_date_week_number": 28,
+    "arrival_date_day_of_month": 12,
+    "stays_in_weekend_nights": 2,
+    "stays_in_week_nights": 5,
+    "adults": 6,
+    "children": 2.0,
+    "babies": 1,
+    "meal": "bb",
+    "country": "gbr",
+    "market_segment": "online_ta",
+    "distribution_channel": "ta/to",
+    "is_repeated_guest": 0,
+    "previous_cancellations": 0,
+    "previous_bookings_not_canceled": 0,
+    "reserved_room_type": "a",
+    "deposit_type": "no_deposit",
+    "agent": 9,
+    "days_in_waiting_list": 0,
+    "customer_type": "transient",
+    "adr": 500.0,
+    "total_of_special_requests": 0,
+    "has_company": 1
 }
 ```
 
-Example response:
+Example response for this request (the exact probability can differ slightly if the model is retrained):
 
 ```json
 {
-  "cancellation_probability": 0.5711,
-  "is_canceled": true,
-  "threshold": 0.5
+    "cancellation_probability": 0.5710930228233337,
+    "is_canceled": true,
+    "threshold": 0.5
 }
 ```
 
@@ -239,7 +280,7 @@ hotel-booking-cancellation-ml/
 │
 ├── notebooks/
 │   ├── 01_eda_cleaning.ipynb
-│   └── 02_modelling.ipynb
+│   └── 02_modeling.ipynb
 │
 ├── src/
 │   ├── train.py
@@ -286,7 +327,7 @@ cd hotel-booking-cancellation-ml
 
 ### 2. Create and activate a virtual environment
 
-Python 3.10 or newer is recommended.
+This project was tested with Python 3.13 (the Docker image uses Python 3.14). Use Python 3.13 or newer so the pinned package versions install without problems.
 
 **Windows PowerShell**
 
@@ -333,9 +374,15 @@ jupyter notebook
 Run the notebooks in order:
 
 1. `notebooks/01_eda_cleaning.ipynb` — data cleaning and EDA.
-2. `notebooks/02_modelling.ipynb` — model development, evaluation and tuning.
+2. `notebooks/02_modeling.ipynb` — model development, evaluation and tuning.
 
 The cleaned dataset is available under `data/processed/`, so the modelling notebook can also be run independently if that file is present.
+
+Run time: notebook 01 takes about 15 seconds and notebook 02 takes about 10-15 minutes (cross-validation and the random forest are the slow parts).
+
+**Running the notebooks in GitHub Codespaces or from the downloaded ZIP:** open the project folder, create the virtual environment, install `requirements.txt`, and select the `.venv` kernel. The notebooks use relative paths (`../data/...`), so they must be run from the `notebooks/` folder, which is the default in Jupyter.
+
+**Running the notebooks in Google Colab:** uncomment the first code cell of each notebook (`!git clone ...` and `%cd ...`) and run it first. Colab has its own pre-installed package versions, so also run `%pip install xgboost==3.4.1` if XGBoost is missing. Colab shows text columns with the dtype `object`, while the pinned pandas version shows `str`. The notebooks check for non-numeric columns, so they work with both, and `hotels_clean.csv` is identical in both environments.
 
 ### 5. Train the model (optional)
 
@@ -472,6 +519,14 @@ The Dockerized Flask application is deployed as a Render Web Service.
 **Service name:** `hotel-cancellation-api`  
 **Public application URL:** https://hotel-cancellation-api-dmr5.onrender.com/
 
+| Render setting | Value |
+|---|---|
+| Service type | Web Service |
+| Runtime | Docker (uses the repository `Dockerfile`) |
+| Branch | `main` |
+| Instance type | Free |
+| Start command | From the Dockerfile (`gunicorn`) |
+
 ### Deployment workflow
 
 1. Commit and push application changes to the GitHub `main` branch.
@@ -538,6 +593,8 @@ The health endpoint confirms that the deployed application is responding success
 ## Limitations
 
 - The dataset contains historical bookings from two hotels in Portugal between 2015 and 2017. It may not reflect current demand or customer behaviour.
+- The model uses the arrival year as a feature. It only saw the years 2015-2017, so predictions for arrival dates in later years are extrapolations and should be treated as indicative only.
+- The country list in the web form only includes countries with at least 100 bookings in the training data. Other countries can be entered as "Other / not listed".
 - Model performance on historical data does not guarantee performance on future bookings.
 - The dataset does not contain a booking ID, so duplicates are identified using identical column values. Some identical records may represent separate real bookings.
 - `total_of_special_requests` may be updated after the original booking is created. Its availability must be considered when defining the actual prediction point.
