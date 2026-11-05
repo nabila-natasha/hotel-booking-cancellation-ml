@@ -1,184 +1,268 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Hotel Cancellation Risk Predictor</title>
-
-    <!-- Link to external CSS -->
+    <title>Reservation Desk | Cancellation Risk Check</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-    <header class="header">
-        <h1>Hotel Cancellation Predictor</h1>
-        <p>Machine Learning | Booking Risk Analytics</p>
-    </header>
-
-    <main class="container">
-
-        <div class="intro">
-            <h2>Booking Risk Assessment</h2>
-            <p>Enter the booking details below to estimate the probability of cancellation.</p>
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 20V8l9-5 9 5v12h-6v-6H9v6H3z" fill="currentColor"/>
+            </svg>
+            <div>
+                <strong>Reservation Desk</strong>
+                <span>Booking cancellation risk check</span>
+            </div>
         </div>
+        <span class="topbar-badge">Machine Learning Zoomcamp 2026</span>
+    </div>
+</header>
 
-        <form method="POST" action="{{ url_for('booking_prediction') }}">
+<main class="page">
 
-            <!-- SECTION 1: HOTEL & ARRIVAL -->
-            <section class="form-card">
-                <h3 class="section-title"><span>01</span> Hotel & Arrival Details</h3>
+    <div class="page-head">
+        <h1>New reservation</h1>
+        <p>Enter the booking details. Nights, lead time and the other grey fields are calculated for you.</p>
+    </div>
 
-                <div class="form-grid">
+    <form method="POST" action="{{ url_for('booking_prediction') }}" id="booking-form" class="layout" novalidate>
 
+        <!-- ================= LEFT: FORM ================= -->
+        <div class="main-col">
+
+            <!-- 1. STAY -->
+            <section class="card">
+                <h2 class="card-title"><span class="step-no">1</span> Stay</h2>
+
+                <div class="field">
+                    <span class="label">Hotel</span>
+                    <div class="seg" role="radiogroup" aria-label="Hotel">
+                        <label class="seg-opt"><input type="radio" name="hotel" value="city_hotel" checked><span>City Hotel</span></label>
+                        <label class="seg-opt"><input type="radio" name="hotel" value="resort_hotel"><span>Resort Hotel</span></label>
+                    </div>
+                </div>
+
+                <div class="grid g4">
                     <div class="field">
-                        <label>Hotel Type</label>
-                        <select name="hotel">
-                            <option value="city_hotel">City Hotel</option>
-                            <option value="resort_hotel">Resort Hotel</option>
+                        <label for="arrival_date">Check-in</label>
+                        <input type="date" id="arrival_date" name="arrival_date" required>
+                    </div>
+                    <div class="field">
+                        <label for="departure_date">Check-out</label>
+                        <input type="date" id="departure_date" name="departure_date" required>
+                    </div>
+                    <div class="field">
+                        <label for="booking_date">Booking entered on</label>
+                        <input type="date" id="booking_date" name="booking_date" value="{{ today }}" required>
+                    </div>
+                    <div class="field">
+                        <label for="lead_time_display">Lead time (days)</label>
+                        <input type="text" id="lead_time_display" class="auto" readonly tabindex="-1">
+                    </div>
+                </div>
+
+                <div class="auto-row">
+                    <div><b id="nights_display">-</b> nights</div>
+                    <div><b id="weeknights_display">-</b> week nights</div>
+                    <div><b id="weekendnights_display">-</b> weekend nights</div>
+                    <span class="hint">Calculated from check-in and check-out. A weekend night is a Saturday or Sunday night.</span>
+                </div>
+
+                <input type="hidden" name="stays_in_week_nights" id="stays_in_week_nights" value="0">
+                <input type="hidden" name="stays_in_weekend_nights" id="stays_in_weekend_nights" value="0">
+            </section>
+
+            <!-- 2. GUESTS -->
+            <section class="card">
+                <h2 class="card-title"><span class="step-no">2</span> Guests</h2>
+
+                <div class="grid g3">
+                    <div class="field">
+                        <label for="adults">Adults</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" data-target="adults" data-dir="-1" aria-label="Fewer adults">&minus;</button>
+                            <input type="number" id="adults" name="adults" value="2" min="1" max="10" required>
+                            <button type="button" class="step-btn" data-target="adults" data-dir="1" aria-label="More adults">+</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="children">Children</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" data-target="children" data-dir="-1" aria-label="Fewer children">&minus;</button>
+                            <input type="number" id="children" name="children" value="0" min="0" max="3">
+                            <button type="button" class="step-btn" data-target="children" data-dir="1" aria-label="More children">+</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="babies">Babies</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" data-target="babies" data-dir="-1" aria-label="Fewer babies">&minus;</button>
+                            <input type="number" id="babies" name="babies" value="0" min="0" max="2">
+                            <button type="button" class="step-btn" data-target="babies" data-dir="1" aria-label="More babies">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid g2">
+                    <div class="field">
+                        <label for="country">Guest country</label>
+                        <select id="country" name="country">
+                            <option value="ago">Angola</option>
+                            <option value="arg">Argentina</option>
+                            <option value="aus">Australia</option>
+                            <option value="aut">Austria</option>
+                            <option value="bel">Belgium</option>
+                            <option value="bra">Brazil</option>
+                            <option value="chn">China</option>
+                            <option value="cze">Czechia</option>
+                            <option value="dnk">Denmark</option>
+                            <option value="fin">Finland</option>
+                            <option value="fra">France</option>
+                            <option value="deu">Germany</option>
+                            <option value="grc">Greece</option>
+                            <option value="hun">Hungary</option>
+                            <option value="ind">India</option>
+                            <option value="irl">Ireland</option>
+                            <option value="isr">Israel</option>
+                            <option value="ita">Italy</option>
+                            <option value="jpn">Japan</option>
+                            <option value="lux">Luxembourg</option>
+                            <option value="mar">Morocco</option>
+                            <option value="nld">Netherlands</option>
+                            <option value="nor">Norway</option>
+                            <option value="pol">Poland</option>
+                            <option value="prt" selected>Portugal</option>
+                            <option value="rou">Romania</option>
+                            <option value="rus">Russian Federation</option>
+                            <option value="kor">South Korea</option>
+                            <option value="esp">Spain</option>
+                            <option value="swe">Sweden</option>
+                            <option value="che">Switzerland</option>
+                            <option value="tur">Türkiye</option>
+                            <option value="gbr">United Kingdom</option>
+                            <option value="usa">United States</option>
+                            <option value="unknown">Other / not listed</option>
+                        </select>
+                        <span class="hint">Countries with at least 100 bookings in the training data.</span>
+                    </div>
+                    <div class="field">
+                        <label for="customer_type">Customer type</label>
+                        <select id="customer_type" name="customer_type">
+                            <option value="transient">Transient</option>
+                            <option value="transient-party">Transient party</option>
+                            <option value="contract">Contract</option>
+                            <option value="group">Group</option>
                         </select>
                     </div>
+                </div>
 
+                <h3 class="sub-title">Guest history</h3>
+                <div class="grid g3">
                     <div class="field">
-                        <label>Arrival Date</label>
-                        <input
-                            type="date"
-                            name="arrival_date"
-                            id="arrival_date"
-                            value="2026-11-15"
-                            required
-                        >
+                        <label for="previous_cancellations">Previous cancellations</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" data-target="previous_cancellations" data-dir="-1" aria-label="Fewer">&minus;</button>
+                            <input type="number" id="previous_cancellations" name="previous_cancellations" value="0" min="0" max="30">
+                            <button type="button" class="step-btn" data-target="previous_cancellations" data-dir="1" aria-label="More">+</button>
+                        </div>
                     </div>
-
                     <div class="field">
-                        <label>Booking Entry Date</label>
-                        <input
-                            type="date"
-                            name="booking_date"
-                            id="booking_date"
-                            value="{{ today }}"
-                            required
-                        >
-                        <span class="help">Date the booking was entered into the PMS.</span>
+                        <label for="previous_bookings_not_canceled">Previous completed bookings</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" data-target="previous_bookings_not_canceled" data-dir="-1" aria-label="Fewer">&minus;</button>
+                            <input type="number" id="previous_bookings_not_canceled" name="previous_bookings_not_canceled" value="0" min="0" max="80">
+                            <button type="button" class="step-btn" data-target="previous_bookings_not_canceled" data-dir="1" aria-label="More">+</button>
+                        </div>
                     </div>
-
                     <div class="field">
-                        <label>Lead Time (Days)</label>
-                        <input
-                            type="number"
-                            id="lead_time_display"
-                            value="0"
-                            readonly
-                        >
-                        <span class="help">Automatically calculated from booking and arrival dates.</span>
+                        <label for="repeat_display">Repeat guest</label>
+                        <input type="text" id="repeat_display" class="auto" readonly tabindex="-1">
+                        <input type="hidden" name="is_repeated_guest" id="is_repeated_guest" value="0">
                     </div>
-
                 </div>
             </section>
 
-            <!-- SECTION 2: GUESTS & STAY -->
-            <section class="form-card">
-                <h3 class="section-title"><span>02</span> Guests & Stay Information</h3>
+            <!-- 3. ROOM & RATE -->
+            <section class="card">
+                <h2 class="card-title"><span class="step-no">3</span> Room &amp; rate</h2>
 
-                <div class="form-grid">
-
-                    <div class="field">
-                        <label>Adults</label>
-                        <input type="number" name="adults" value="2">
+                <div class="field">
+                    <span class="label">Room type</span>
+                    <div class="tiles" role="radiogroup" aria-label="Reserved room type">
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="a" checked><span>A</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="b"><span>B</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="c"><span>C</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="d"><span>D</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="e"><span>E</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="f"><span>F</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="g"><span>G</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="h"><span>H</span></label>
+                        <label class="tile"><input type="radio" name="reserved_room_type" value="l"><span>L</span></label>
                     </div>
+                    <span class="hint">Room codes are anonymised in the dataset.</span>
+                </div>
 
-                    <div class="field">
-                        <label>Children</label>
-                        <input type="number" name="children" value="0" step="0.1">
+                <div class="field">
+                    <span class="label">Meal plan</span>
+                    <div class="seg wrap" role="radiogroup" aria-label="Meal plan">
+                        <label class="seg-opt"><input type="radio" name="meal" value="bb" checked><span>Bed &amp; breakfast</span></label>
+                        <label class="seg-opt"><input type="radio" name="meal" value="hb"><span>Half board</span></label>
+                        <label class="seg-opt"><input type="radio" name="meal" value="fb"><span>Full board</span></label>
+                        <label class="seg-opt"><input type="radio" name="meal" value="sc"><span>Self catering</span></label>
+                        <label class="seg-opt"><input type="radio" name="meal" value="undefined"><span>No meal / undefined</span></label>
                     </div>
+                </div>
 
+                <div class="grid g2">
                     <div class="field">
-                        <label>Babies</label>
-                        <input type="number" name="babies" value="0">
+                        <label for="adr">Rate per night (ADR)</label>
+                        <input type="number" id="adr" name="adr" value="100" min="0" max="600" step="0.01" required>
+                        <span class="hint">Average daily rate. The dataset does not state the currency.</span>
                     </div>
-
                     <div class="field">
-                        <label>Weekend Nights</label>
-                        <input type="number" name="stays_in_weekend_nights" value="1">
+                        <label for="total_display">Estimated room total</label>
+                        <input type="text" id="total_display" class="auto" readonly tabindex="-1">
+                        <span class="hint">Rate &times; nights.</span>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label>Week Nights</label>
-                        <input type="number" name="stays_in_week_nights" value="3">
+                <div class="field">
+                    <span class="label">Deposit</span>
+                    <div class="seg" role="radiogroup" aria-label="Deposit type">
+                        <label class="seg-opt"><input type="radio" name="deposit_type" value="no_deposit" checked><span>No deposit</span></label>
+                        <label class="seg-opt"><input type="radio" name="deposit_type" value="refundable"><span>Refundable</span></label>
+                        <label class="seg-opt"><input type="radio" name="deposit_type" value="non_refund"><span>Non-refundable</span></label>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label>Meal Plan</label>
-                        <select name="meal">
-                            <option value="bb">Bed & Breakfast</option>
-                            <option value="fb">Full Board</option>
-                            <option value="hb">Half Board</option>
-                            <option value="sc">Self Catering</option>
-                            <option value="undefined">No Meal</option>
-                        </select>
+                <div class="field narrow">
+                    <label for="total_of_special_requests">Special requests</label>
+                    <div class="stepper">
+                        <button type="button" class="step-btn" data-target="total_of_special_requests" data-dir="-1" aria-label="Fewer">&minus;</button>
+                        <input type="number" id="total_of_special_requests" name="total_of_special_requests" value="0" min="0" max="5">
+                        <button type="button" class="step-btn" data-target="total_of_special_requests" data-dir="1" aria-label="More">+</button>
                     </div>
-
+                    <span class="hint">e.g. high floor, late arrival, extra bed.</span>
                 </div>
             </section>
 
-            <!-- SECTION 3: BOOKING INFORMATION -->
-            <section class="form-card">
-                <h3 class="section-title"><span>03</span> Booking Information</h3>
+            <!-- 4. BOOKING SOURCE -->
+            <section class="card">
+                <h2 class="card-title"><span class="step-no">4</span> Booking source</h2>
 
-                <div class="form-grid">
-
+                <div class="grid g2">
                     <div class="field">
-                        <label>Guest Country</label>
-                        <select name="country">
-                            <option value="prt" selected>Portugal (PRT)</option>
-                            <option value="mys">Malaysia (MYS)</option>
-                            <option value="gbr">United Kingdom (GBR)</option>
-                            <option value="usa">United States (USA)</option>
-                            <option value="deu">Germany (DEU)</option>
-                            <option value="fra">France (FRA)</option>
-                            <option value="esp">Spain (ESP)</option>
-                            <option value="ita">Italy (ITA)</option>
-                            <option value="nld">Netherlands (NLD)</option>
-                            <option value="bel">Belgium (BEL)</option>
-                            <option value="che">Switzerland (CHE)</option>
-                            <option value="aut">Austria (AUT)</option>
-                            <option value="irl">Ireland (IRL)</option>
-                            <option value="pol">Poland (POL)</option>
-                            <option value="swe">Sweden (SWE)</option>
-                            <option value="nor">Norway (NOR)</option>
-                            <option value="dnk">Denmark (DNK)</option>
-                            <option value="fin">Finland (FIN)</option>
-                            <option value="grc">Greece (GRC)</option>
-                            <option value="tur">Türkiye (TUR)</option>
-                            <option value="chn">China (CHN)</option>
-                            <option value="jpn">Japan (JPN)</option>
-                            <option value="kor">South Korea (KOR)</option>
-                            <option value="ind">India (IND)</option>
-                            <option value="idn">Indonesia (IDN)</option>
-                            <option value="sgp">Singapore (SGP)</option>
-                            <option value="tha">Thailand (THA)</option>
-                            <option value="aus">Australia (AUS)</option>
-                            <option value="nzl">New Zealand (NZL)</option>
-                            <option value="bra">Brazil (BRA)</option>
-                            <option value="arg">Argentina (ARG)</option>
-                            <option value="mex">Mexico (MEX)</option>
-                            <option value="can">Canada (CAN)</option>
-                            <option value="zaf">South Africa (ZAF)</option>
-                            <option value="are">United Arab Emirates (ARE)</option>
-                            <option value="sau">Saudi Arabia (SAU)</option>
-                            <option value="isr">Israel (ISR)</option>
-                            <option value="egy">Egypt (EGY)</option>
-                        </select>
-                        <span class="help">Select the guest's country of origin.</span>
-                    </div>
-
-                    <div class="field">
-                        <label>Market Segment</label>
-                        <select name="market_segment">
-                            <option value="online_ta">Online Travel Agent</option>
-                            <option value="offline_ta/to">Offline Travel Agent</option>
+                        <label for="market_segment">Market segment</label>
+                        <select id="market_segment" name="market_segment">
+                            <option value="online_ta">Online travel agent</option>
+                            <option value="offline_ta/to">Offline travel agent / tour operator</option>
                             <option value="direct">Direct</option>
                             <option value="corporate">Corporate</option>
                             <option value="groups">Groups</option>
@@ -187,208 +271,268 @@
                             <option value="undefined">Undefined</option>
                         </select>
                     </div>
-
                     <div class="field">
-                        <label>Distribution Channel</label>
-                        <select name="distribution_channel">
-                            <option value="ta/to">Travel Agent / Tour Operator</option>
-                            <option value="direct">Direct</option>
-                            <option value="corporate">Corporate</option>
-                            <option value="gds">Global Distribution System</option>
-                            <option value="undefined">Undefined</option>
-                        </select>
+                        <label for="channel_display">Distribution channel</label>
+                        <input type="text" id="channel_display" class="auto" readonly tabindex="-1">
+                        <input type="hidden" name="distribution_channel" id="distribution_channel" value="ta/to">
+                        <span class="hint">Set from the market segment (the usual channel in the data).</span>
                     </div>
-
-                    <div class="field">
-                        <label for="adr">Average Daily Rate (ADR) — Price per Night ($)</label>
-                        <input
-                            type="number"
-                            id="adr"
-                            name="adr"
-                            value="100"
-                            min="0"
-                            step="0.01"
-                            required
-                        >
-                        <span class="help">
-                            Average lodging revenue per occupied night.
-                        </span>
-                    </div>
-
-                    <div class="field">
-                        <label>Special Requests</label>
-                        <input type="number" name="total_of_special_requests" value="1">
-                    </div>
-
-                    <div class="field">
-                        <label>Days in Waiting List</label>
-                        <input type="number" name="days_in_waiting_list" value="0">
-                    </div>
-
                 </div>
-            </section>
 
-            <!-- SECTION 4: RESERVATION HISTORY -->
-            <section class="form-card">
-                <h3 class="section-title"><span>04</span> Reservation History</h3>
-
-                <div class="form-grid">
-
+                <div class="grid g3">
                     <div class="field">
-                        <label>Repeated Guest?</label>
-                        <select name="is_repeated_guest">
+                        <label for="agent">Agent ID</label>
+                        <input type="number" id="agent" name="agent" value="9" min="0" max="600" list="agent_list">
+                        <datalist id="agent_list">
+                            <option value="0">No agent</option>
+                            <option value="9"></option><option value="240"></option><option value="14"></option>
+                            <option value="7"></option><option value="250"></option><option value="241"></option>
+                            <option value="28"></option><option value="8"></option><option value="1"></option>
+                        </datalist>
+                        <span class="hint">0 = no agent. Suggested from the segment; you can change it.</span>
+                    </div>
+                    <div class="field">
+                        <label for="has_company">Booked by a company</label>
+                        <select id="has_company" name="has_company">
                             <option value="0">No</option>
                             <option value="1">Yes</option>
                         </select>
                     </div>
-
                     <div class="field">
-                        <label>Previous Cancellations</label>
-                        <input type="number" name="previous_cancellations" value="0">
+                        <label for="days_in_waiting_list">Days on waiting list</label>
+                        <input type="number" id="days_in_waiting_list" name="days_in_waiting_list" value="0" min="0" max="400">
                     </div>
-
-                    <div class="field">
-                        <label>Previous Non-Cancelled Bookings</label>
-                        <input type="number" name="previous_bookings_not_canceled" value="0">
-                    </div>
-
-                    <div class="field">
-                        <label>Customer Type</label>
-                        <select name="customer_type">
-                            <option value="transient">Transient</option>
-                            <option value="transient-party">Transient Party</option>
-                            <option value="contract">Contract</option>
-                            <option value="group">Group</option>
-                        </select>
-                    </div>
-
-                    <div class="field">
-                        <label>Company Booking?</label>
-                        <select name="has_company">
-                            <option value="0">No</option>
-                            <option value="1">Yes</option>
-                        </select>
-                    </div>
-
-                    <div class="field">
-                        <label>Agent ID</label>
-                        <input type="number" name="agent" value="0">
-                    </div>
-
                 </div>
             </section>
 
-            <!-- SECTION 5: ROOM & PAYMENT -->
-            <section class="form-card">
-                <h3 class="section-title"><span>05</span> Room & Payment Details</h3>
+        </div>
 
-                <div class="form-grid">
+        <!-- ================= RIGHT: SUMMARY ================= -->
+        <aside class="summary" aria-label="Reservation summary">
+            <div class="summary-card">
+                <h2>Reservation summary</h2>
 
-                    <div class="field">
-                        <label>Reserved Room Type</label>
-                        <select name="reserved_room_type">
-                            <option value="a">Room A</option>
-                            <option value="b">Room B</option>
-                            <option value="c">Room C</option>
-                            <option value="d">Room D</option>
-                            <option value="e">Room E</option>
-                            <option value="f">Room F</option>
-                            <option value="g">Room G</option>
-                            <option value="h">Room H</option>
-                            <option value="l">Room L</option>
-                        </select>
-                    </div>
+                <dl class="summary-list">
+                    <div><dt>Hotel</dt><dd id="s_hotel">-</dd></div>
+                    <div><dt>Check-in</dt><dd id="s_in">-</dd></div>
+                    <div><dt>Check-out</dt><dd id="s_out">-</dd></div>
+                    <div><dt>Stay</dt><dd id="s_nights">-</dd></div>
+                    <div><dt>Guests</dt><dd id="s_guests">-</dd></div>
+                    <div><dt>Room / meal</dt><dd id="s_room">-</dd></div>
+                    <div><dt>Deposit</dt><dd id="s_deposit">-</dd></div>
+                    <div><dt>Lead time</dt><dd id="s_lead">-</dd></div>
+                </dl>
 
-                    <div class="field">
-                        <label>Deposit Type</label>
-                        <select name="deposit_type">
-                            <option value="no_deposit">No Deposit</option>
-                            <option value="non_refund">Non-refundable</option>
-                            <option value="refundable">Refundable</option>
-                        </select>
-                    </div>
-
+                <div class="total-row">
+                    <span>Estimated total</span>
+                    <strong id="s_total">-</strong>
                 </div>
-            </section>
 
-            <div class="action-area">
-                <button type="submit" class="predict-button">
-                    Predict Cancellation Risk →
-                </button>
+                <button type="submit" class="cta">Check cancellation risk</button>
+                <p class="fine">Estimate only. It is not a booking confirmation.</p>
             </div>
 
-        </form>
+            <div class="result-card" id="result">
+                {% if error %}
+                    <h2>Check the form</h2>
+                    <p class="result-error">{{ error }}</p>
 
-        <!-- PREDICTION RESULT -->
-        <section class="result-card">
-            <h3>Prediction Result</h3>
+                {% elif prediction %}
+                    {% set pct = prediction.cancellation_probability * 100 %}
+                    {% set risky = prediction.is_canceled %}
+                    <h2>Cancellation risk</h2>
+                    <div class="result-top {{ 'is-high' if risky else 'is-low' }}">
+                        <div class="result-pct">{{ "%.1f"|format(pct) }}<small>%</small></div>
+                        <div class="result-badge">{{ 'High risk' if risky else 'Low risk' }}</div>
+                    </div>
 
-            {% if error %}
-                <div class="result-placeholder">
-                    <strong>Unable to generate prediction</strong>
-                    <br>
-                    {{ error }}
-                </div>
+                    <div class="gauge" role="img" aria-label="Estimated cancellation probability {{ '%.1f'|format(pct) }} percent">
+                        <div class="gauge-fill {{ 'is-high' if risky else 'is-low' }}" style="width: {{ '%.1f'|format(pct) }}%"></div>
+                        <div class="gauge-mark" style="left: {{ '%.1f'|format(prediction.threshold * 100) }}%"></div>
+                    </div>
+                    <div class="gauge-scale"><span>0%</span><span>Decision threshold {{ "%.0f"|format(prediction.threshold * 100) }}%</span><span>100%</span></div>
 
-            {% elif prediction %}
-                <div class="result-placeholder">
-                    <h2>
-                        {{ "%.1f"|format(prediction.cancellation_probability * 100) }}%
-                    </h2>
+                    <p class="result-text">
+                        {% if risky %}
+                            This booking is <strong>likely to be cancelled</strong>. Consider a reminder or a deposit follow-up.
+                        {% else %}
+                            This booking is <strong>unlikely to be cancelled</strong>.
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <h2>Cancellation risk</h2>
+                    <p class="result-empty">The estimated probability and risk level will appear here after you check the booking.</p>
+                {% endif %}
+            </div>
+        </aside>
 
-                    <p>Estimated cancellation probability</p>
+    </form>
 
-                    {% if prediction.is_canceled %}
-                        <strong>Predicted Status: Likely to Cancel</strong>
-                    {% else %}
-                        <strong>Predicted Status: Likely to Not Cancel</strong>
-                    {% endif %}
+    <footer class="footer">
+        Hotel Booking Cancellation Prediction &middot; Machine Learning Zoomcamp 2026<br>
+        Trained on 2015&ndash;2017 bookings from two hotels in Portugal. Predictions are indicative only.
+    </footer>
+</main>
 
-                    <p>Decision threshold: {{ prediction.threshold }}</p>
-                </div>
+<script>
+(function () {
+    // Values from the previous submit, so the form is not reset after a prediction
+    const saved = {{ request.form.to_dict()|tojson }};
+    const form = document.getElementById('booking-form');
+    const $ = (id) => document.getElementById(id);
 
-            {% else %}
-                <div class="result-placeholder">
-                    <strong>Awaiting prediction</strong>
-                    <br>
-                    Cancellation probability and predicted booking status will appear here.
-                </div>
-            {% endif %}
-        </section>
+    const hotelNames = {city_hotel: 'City Hotel', resort_hotel: 'Resort Hotel'};
+    const mealNames = {bb: 'Bed & breakfast', hb: 'Half board', fb: 'Full board', sc: 'Self catering', undefined: 'No meal / undefined'};
+    const depositNames = {no_deposit: 'No deposit', refundable: 'Refundable', non_refund: 'Non-refundable'};
+    const channelNames = {'ta/to': 'Travel agent / tour operator', direct: 'Direct', corporate: 'Corporate', gds: 'Global distribution system', undefined: 'Undefined'};
+    // Usual channel and agent for each segment, taken from the training data
+    const segmentDefaults = {
+        'online_ta':     {channel: 'ta/to',     agent: '9'},
+        'offline_ta/to': {channel: 'ta/to',     agent: '28'},
+        'direct':        {channel: 'direct',    agent: '0'},
+        'corporate':     {channel: 'corporate', agent: '0'},
+        'groups':        {channel: 'ta/to',     agent: '0'},
+        'complementary': {channel: 'direct',    agent: '0'},
+        'aviation':      {channel: 'corporate', agent: '0'},
+        'undefined':     {channel: 'undefined', agent: '0'}
+    };
 
-        <footer class="footer">
-            Hotel Booking Cancellation Prediction | Machine Learning Zoomcamp 2026
-            <br>
-            Predictions are indicative and are not booking confirmations.
-        </footer>
+    const DAY = 24 * 60 * 60 * 1000;
+    const toDate = (v) => v ? new Date(v + 'T00:00:00') : null;
+    const toIso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+    const pretty = (d) => d ? d.toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+    const radio = (name) => { const r = form.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ''; };
+    const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+    const money = (n) => n.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-    </main>
+    // ---------- start values ----------
+    const bookingDate = toDate($('booking_date').value) || new Date();
+    $('arrival_date').value = toIso(addDays(bookingDate, 30));
+    $('departure_date').value = toIso(addDays(bookingDate, 33));
 
-    <script>
-        const bookingDate = document.getElementById("booking_date");
-        const arrivalDate = document.getElementById("arrival_date");
-        const leadTime = document.getElementById("lead_time_display");
-
-        function calculateLeadTime() {
-            if (!bookingDate.value || !arrivalDate.value) {
-                leadTime.value = "";
-                return;
-            }
-
-            const booking = new Date(bookingDate.value + "T00:00:00");
-            const arrival = new Date(arrivalDate.value + "T00:00:00");
-
-            const difference = arrival - booking;
-            const days = Math.round(difference / (1000 * 60 * 60 * 24));
-
-            leadTime.value = days >= 0 ? days : "";
+    Object.keys(saved).forEach(function (key) {
+        const value = saved[key];
+        const radios = form.querySelectorAll('input[type="radio"][name="' + key + '"]');
+        if (radios.length) {
+            radios.forEach(function (r) { r.checked = (r.value === value); });
+            return;
         }
+        const el = form.elements[key];
+        if (el && el.type !== 'hidden') { el.value = value; }
+    });
+    if (saved.agent !== undefined) { $('agent').dataset.touched = '1'; }
 
-        bookingDate.addEventListener("change", calculateLeadTime);
-        arrivalDate.addEventListener("change", calculateLeadTime);
+    // ---------- calculations ----------
+    function update() {
+        const booking = toDate($('booking_date').value);
+        const checkIn = toDate($('arrival_date').value);
+        const checkOut = toDate($('departure_date').value);
 
-        calculateLeadTime();
-    </script>
+        // Nights: weekend night = Saturday or Sunday night
+        let weekNights = 0, weekendNights = 0;
+        if (checkIn && checkOut && checkOut > checkIn) {
+            for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                const day = d.getDay();
+                if (day === 0 || day === 6) { weekendNights++; } else { weekNights++; }
+            }
+        }
+        const nights = weekNights + weekendNights;
+        $('stays_in_week_nights').value = weekNights;
+        $('stays_in_weekend_nights').value = weekendNights;
+        $('nights_display').textContent = nights || '-';
+        $('weeknights_display').textContent = nights ? weekNights : '-';
+        $('weekendnights_display').textContent = nights ? weekendNights : '-';
+
+        // Lead time
+        const lead = (booking && checkIn) ? Math.round((checkIn - booking) / DAY) : null;
+        $('lead_time_display').value = (lead !== null && lead >= 0) ? lead : '';
+
+        // Date rules
+        if (booking) { $('arrival_date').min = toIso(booking); }
+        if (checkIn) { $('departure_date').min = toIso(addDays(checkIn, 1)); }
+        $('arrival_date').setCustomValidity(lead !== null && lead < 0 ? 'Check-in cannot be before the booking date.' : '');
+        $('departure_date').setCustomValidity(nights === 0 ? 'Check-out must be after check-in.' : '');
+
+        // Repeat guest from guest history
+        const history = (parseInt($('previous_cancellations').value, 10) || 0) + (parseInt($('previous_bookings_not_canceled').value, 10) || 0);
+        $('is_repeated_guest').value = history > 0 ? 1 : 0;
+        $('repeat_display').value = history > 0 ? 'Yes (has previous bookings)' : 'No (first booking)';
+
+        // Channel from segment
+        const segment = $('market_segment').value;
+        const channel = (segmentDefaults[segment] || segmentDefaults.undefined).channel;
+        $('distribution_channel').value = channel;
+        $('channel_display').value = channelNames[channel];
+
+        // Money
+        const adr = parseFloat($('adr').value) || 0;
+        const total = adr * nights;
+        $('total_display').value = nights ? money(total) : '';
+
+        // Summary panel
+        const adults = parseInt($('adults').value, 10) || 0;
+        const children = parseInt($('children').value, 10) || 0;
+        const babies = parseInt($('babies').value, 10) || 0;
+        let guests = plural(adults, 'adult');
+        if (children) { guests += ', ' + plural(children, 'child').replace('childs', 'children'); }
+        if (babies) { guests += ', ' + plural(babies, 'baby').replace('babys', 'babies'); }
+
+        $('s_hotel').textContent = hotelNames[radio('hotel')] || '-';
+        $('s_in').textContent = pretty(checkIn);
+        $('s_out').textContent = pretty(checkOut);
+        $('s_nights').textContent = nights ? plural(nights, 'night') + ' (' + weekNights + ' week, ' + weekendNights + ' weekend)' : '-';
+        $('s_guests').textContent = guests;
+        $('s_room').textContent = 'Type ' + radio('reserved_room_type').toUpperCase() + ' · ' + (mealNames[radio('meal')] || '-');
+        $('s_deposit').textContent = depositNames[radio('deposit_type')] || '-';
+        $('s_lead').textContent = (lead !== null && lead >= 0) ? plural(lead, 'day') : '-';
+        $('s_total').textContent = nights ? money(total) : '-';
+    }
+
+    // Suggest the usual agent when the segment changes (only if the user has not typed one)
+    $('market_segment').addEventListener('change', function () {
+        if ($('agent').dataset.touched !== '1') {
+            $('agent').value = (segmentDefaults[$('market_segment').value] || segmentDefaults.undefined).agent;
+        }
+    });
+    $('agent').addEventListener('input', function () { $('agent').dataset.touched = '1'; });
+
+    // + / - buttons
+    form.addEventListener('click', function (e) {
+        const btn = e.target.closest('.step-btn');
+        if (!btn) { return; }
+        const input = $(btn.dataset.target);
+        const min = input.min !== '' ? Number(input.min) : -Infinity;
+        const max = input.max !== '' ? Number(input.max) : Infinity;
+        const next = (parseInt(input.value, 10) || 0) + Number(btn.dataset.dir);
+        input.value = Math.min(max, Math.max(min, next));
+        update();
+    });
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+
+    // Show the first problem instead of silently doing nothing
+    form.addEventListener('submit', function (e) {
+        update();
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            form.reportValidity();
+        }
+    });
+
+    // Agent suggestion on first load (no saved form)
+    if (saved.agent === undefined) {
+        $('agent').value = segmentDefaults[$('market_segment').value].agent;
+    }
+    update();
+
+    // After a prediction, bring the result into view (useful on phones)
+    if ({{ 'true' if (prediction or error) else 'false' }}) {
+        document.getElementById('result').scrollIntoView({block: 'center'});
+    }
+})();
+</script>
 
 </body>
 </html>
