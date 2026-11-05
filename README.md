@@ -80,7 +80,7 @@ The JSON API remains available for programmatic predictions and integration with
 ## Dataset
 
 - **Dataset:** Hotel Booking Demand.
-- **Source:** TidyTuesday, 11 February 2020.
+- **Source:** [TidyTuesday, 11 February 2020](https://github.com/rfordatascience/tidytuesday/blob/main/data/2020/2020-02-11/readme.md)
 - **Original research:** Antonio, Almeida and Nunes (2019), *Hotel booking demand datasets*, Data in Brief, 22, 41–49.
 - **Hotels:** One city hotel and one resort hotel in Portugal.
 - **Prediction target:** `is_canceled` (1 = cancelled, 0 = not cancelled).
