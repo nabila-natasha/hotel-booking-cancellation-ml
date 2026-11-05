@@ -256,7 +256,7 @@ Example response for this request (the exact probability can differ slightly if 
 
 ```json
 {
-    "cancellation_probability": 0.5710930228233337,
+    "cancellation_probability": 0.5058664679527283,
     "is_canceled": true,
     "threshold": 0.5
 }
@@ -439,7 +439,7 @@ Using the example booking JSON file:
 ```powershell
 curl.exe -X POST http://127.0.0.1:9696/predict `
   -H "Content-Type: application/json" `
-  --data-binary "@test_data/booking_01.json"
+  --data-binary "@test_data/booking_02.json"
 ```
 
 **Linux / macOS / GitHub Codespaces**
@@ -447,7 +447,7 @@ curl.exe -X POST http://127.0.0.1:9696/predict `
 ```bash
 curl -X POST http://127.0.0.1:9696/predict \
   -H "Content-Type: application/json" \
-  --data-binary "@test_data/booking_01.json"
+  --data-binary "@test_data/booking_02.json"
 ```
 
 The API returns the cancellation probability, predicted class and classification threshold.
@@ -501,15 +501,36 @@ http://localhost:9696/
 
 For GitHub Codespaces, open the forwarded port `9696` from the Ports tab and use the generated browser URL instead of `127.0.0.1`.
 
-### 4. Test the container
+### 4. Test the Dockerized API using Postman
 
-Check:
+The Dockerized application was tested through Postman using the forwarded GitHub Codespaces port.
 
-- Homepage loads successfully.
-- CSS and HTML are served correctly.
-- `/health` returns a successful response.
-- Booking form submits successfully.
-- Prediction result is displayed.
+**Request configuration:**
+
+| Setting | Value |
+|---|---|
+| Method | POST |
+| Endpoint | `/predict` |
+| Header | `Content-Type: application/json` |
+| Body | Raw JSON booking information |
+
+The same booking payload was also tested using the local Python prediction script:
+
+```bash
+python src/predict-test.py
+```
+
+The Docker API returned the following response:
+
+```json
+{
+  "cancellation_probability": 0.5058664679527283,
+  "is_canceled": true,
+  "threshold": 0.5
+}
+```
+
+The prediction probability, classification result and threshold matched the local Python prediction exactly. This confirmed consistent inference between the local Python environment and the Docker container.
 
 ## Cloud Deployment: Render
 
@@ -559,9 +580,42 @@ Submit a booking through the public web interface and verify that the estimated 
 
 Render free services may spin down after periods of inactivity, so the first request after inactivity can take longer to respond.
 
+## Model Prediction Consistency Validation
+
+The application was tested across local Python execution and Docker
+containerization to verify that the same booking information produces
+consistent predictions across environments.
+
+### Test Scenario
+
+The same 26-feature hotel booking payload was used for both tests.
+
+The test booking produced the following result:
+
+| Metric | Result |
+|---|---|
+| Cancellation probability | 0.5058664679527283 |
+| Predicted cancellation status | True |
+| Classification threshold | 0.5 |
+
+### Validation Environments
+
+| Environment | Test Method | Result |
+|---|---|---|
+| Local Python | `python src/predict-test.py` | Passed |
+| Docker | Postman POST request to `/predict` | Passed |
+| Render | Postman POST request to `/predict` | Passed |
+
+The local Python and Docker predictions returned identical cancellation probabilities, classification results and thresholds.
+
+Render validation will use the same request payload to verify that the deployed application returns the expected prediction.
+
+
 ## Screenshots and Deployment Evidence
 
-The following screenshots demonstrate the deployed application, successful model prediction and application health check.
+The following screenshots demonstrate the interactive web application,
+Docker API testing, successful cloud deployment, prediction results
+and application health check.
 
 ### 1. Interactive Web Application
 
@@ -586,6 +640,15 @@ A successful Postman request demonstrates that the deployed API accepts booking 
 The health endpoint confirms that the deployed application is responding successfully.
 
 ![Application Health Check](screenshots/04-health-check.PNG)
+
+### 5. Docker API Prediction Test
+
+A successful Postman POST request to the Dockerized application, running through the forwarded GitHub Codespaces port, demonstrates that the container can process booking information and return a prediction.
+
+The prediction was also compared with the local Python execution result. Both environments returned the same cancellation probability and predicted classification.
+
+![Docker Postman Prediction](screenshots/05-docker-postman-prediction.PNG)
+
 
 **Live application:** https://hotel-cancellation-api-dmr5.onrender.com/
 
