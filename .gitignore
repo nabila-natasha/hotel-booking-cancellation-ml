@@ -16,9 +16,6 @@ env/
 .env.*
 !.env.example
 
-# Raw data (can be downloaded from the source)
-data/raw/*
-
 # Keep the processed dataset needed by the modelling notebook
 # (Do not ignore data/processed/hotels_clean.csv)
 
@@ -29,6 +26,7 @@ data/raw/*
 .pytest_cache/
 .coverage
 htmlcov/
+_check/
 
 # Operating system
 .DS_Store
