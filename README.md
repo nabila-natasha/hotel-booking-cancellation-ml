@@ -754,7 +754,7 @@ The test booking produced the following result:
 | Environment | Test Method | Result |
 |---|---|---|
 | Local Python | `python src/predict-test.py` | Passed |
-| Docker | Postman POST request to `/predict` | Passed |
+| Docker | Postman POST request to `/predict` (screenshot 5) | Passed |
 | Render | Postman POST request to `/predict` (screenshot 3) | Passed |
 
 The local Python, Docker and Render predictions returned identical cancellation probabilities, classification results and thresholds. All three use the same saved model file, so identical results are expected.
