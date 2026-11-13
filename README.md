@@ -27,20 +27,20 @@ The project demonstrates a complete machine learning workflow, including explora
 | Try the live app | https://hotel-cancellation-api-dmr5.onrender.com/ (free tier: the first load after inactivity can take about 1 minute) |
 | Read the data analysis | `notebooks/01_eda_cleaning.ipynb` |
 | Read the model comparison and tuning | `notebooks/02_modeling.ipynb` |
-| Run the project locally | [Reproducibility](#reproducibility-running-the-project-locally) |
+| Run the notebooks, training script, app and tests | [Reproducibility](#reproducibility-running-the-project) |
 | Run the Docker container | [Docker Containerization](#docker-containerization) |
 
-Fastest local check (the install takes a few minutes):
+Fastest check, with no git or local install needed: open the repository in **GitHub Codespaces** (**Code > Codespaces > Create codespace on main**), then run this in the terminal (the install takes a few minutes):
 
 ```bash
-git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git
-cd hotel-booking-cancellation-ml
 python -m venv .venv
-source .venv/bin/activate          # Windows PowerShell: .\.venv\Scripts\Activate.ps1
+source .venv/bin/activate
 pip install -r requirements.txt
 python -m pytest tests -v          # expected: 2 passed
-python src/app.py                  # then open http://127.0.0.1:9696/
+python src/app.py                  # then click "Open in Browser" for port 9696
 ```
+
+Running on your own computer or in Google Colab, and running the notebooks, is explained in [Reproducibility](#reproducibility-running-the-project).
 
 ## Business Problem
 
@@ -92,7 +92,7 @@ The JSON API remains available for programmatic predictions and integration with
 | `data/raw/hotels.csv` | Original dataset |
 | `data/processed/hotels_clean.csv` | Cleaned dataset used for modelling |
 
-If the raw dataset is unavailable, the first notebook downloads it from the TidyTuesday repository.
+Both files are committed to the repository, so no download is needed. If `data/raw/hotels.csv` is missing, the first notebook downloads it from the [TidyTuesday repository](https://github.com/rfordatascience/tidytuesday/blob/main/data/2020/2020-02-11/hotels.csv); if your network blocks the download, save the file manually as `data/raw/hotels.csv`.
 
 ## Data Cleaning Decisions
 
@@ -360,92 +360,139 @@ hotel-booking-cancellation-ml/
 └── .gitignore
 ```
 
-## Reproducibility: Running the Project Locally
+## Reproducibility: Running the Project
 
-The following instructions allow another developer or reviewer to reproduce the application locally.
+This section explains how to run the notebooks, the training script, the web application, the tests and Docker. **You do not need git or a local Python installation:** the easiest way is GitHub Codespaces, which runs everything in your browser.
 
-### 1. Clone the repository
+The cleaned and raw datasets are **committed to the repository** (`data/raw/hotels.csv`, 16.9 MB, and `data/processed/hotels_clean.csv`, 9.6 MB), so nothing has to be downloaded before running the notebooks.
+
+### Where to run it
+
+| Option | Best when | What you need |
+|---|---|---|
+| **A. GitHub Codespaces (recommended)** | You cannot install git, Python or Docker on your computer | A free GitHub account and a browser. Python and Docker are already available there |
+| **B. Your own computer** | You can install Python 3.12 or newer | Python 3.12+; git is optional (you can download a ZIP file instead) |
+| **C. Google Colab** | You only want to run the two notebooks | A Google account |
+
+**Codespaces usage limit:** GitHub Free personal accounts include 120 compute hours and 15 GB-month of storage per month ([GitHub documentation](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)). A 2-core codespace uses 2 of those hours for every hour it runs, so you get roughly 60 hours. Running the whole project takes well under 1 hour. Stop or delete the codespace when you finish.
+
+**Python version:** the pinned packages in `requirements.txt` (`numpy`, `scipy` and `xgboost`) need **Python 3.12 or newer**. This project was developed and tested with Python 3.14.2 in GitHub Codespaces (the Docker image also uses Python 3.14) and the tests also pass on Python 3.13.
+
+---
+
+### Option A: GitHub Codespaces (no git needed)
+
+1. Sign in to GitHub and open the repository page: https://github.com/nabila-natasha/hotel-booking-cancellation-ml
+2. Click the green **Code** button, open the **Codespaces** tab and click **Create codespace on main**. After 1 to 2 minutes, VS Code opens in your browser with all the project files already loaded. (No `git clone` is needed.)
+3. Open a terminal: **Terminal > New Terminal**. Check the Python version:
+
+   ```bash
+   python --version
+   ```
+
+   It must show 3.12 or newer.
+4. Create a virtual environment and install the packages (this takes a few minutes):
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+   If VS Code asks whether to use the new environment for this workspace, click **Yes**.
+5. Continue with [Step 1: Run the notebooks](#step-1-run-the-notebooks).
+
+> The other steps (notebooks, training, app, tests and Docker) all work in the Codespaces terminal. When the Flask app starts, Codespaces shows a pop-up for port 9696: click **Open in Browser**, or use the **Ports** tab.
+
+### Option B: Your own computer (VS Code or a terminal)
+
+1. **Get the code.**
+   - *With git:* `git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git` and then `cd hotel-booking-cancellation-ml`.
+   - *Without git:* open the repository page, click **Code > Download ZIP**, unzip it, and open the unzipped folder (named `hotel-booking-cancellation-ml-main`) in VS Code with **File > Open Folder**.
+2. **Check Python 3.12 or newer** is installed: `python --version` (on Windows you can also try `py --version`). If it is missing, install it from https://www.python.org/downloads/.
+3. **Create a virtual environment** in a terminal opened in the project folder (in VS Code: **Terminal > New Terminal**):
+
+   **Windows PowerShell**
+
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+   If PowerShell says "running scripts is disabled", either use Command Prompt (`.\.venv\Scripts\activate.bat`) or run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` and then activate again.
+
+   **Linux / macOS**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+4. **Install the packages:**
+
+   ```bash
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+   For the prediction application only (without notebooks) you can use `pip install -r requirements-api.txt` instead. `requirements-api.txt` is also the file used by the Dockerfile.
+5. If `pip` cannot reach the internet (for example behind a company proxy), use Option A instead.
+6. The `.venv` folder is excluded from version control. Each user creates their own.
+
+### Option C: Google Colab (notebooks only)
+
+1. Open the notebook directly from GitHub in Colab:
+   - [01_eda_cleaning.ipynb](https://colab.research.google.com/github/nabila-natasha/hotel-booking-cancellation-ml/blob/main/notebooks/01_eda_cleaning.ipynb)
+   - [02_modeling.ipynb](https://colab.research.google.com/github/nabila-natasha/hotel-booking-cancellation-ml/blob/main/notebooks/02_modeling.ipynb)
+2. In the first code cell, remove the `#` in front of these two lines and run the cell:
+
+   ```python
+   !git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git
+   %cd hotel-booking-cancellation-ml/notebooks
+   ```
+
+   Do this only in Colab. In Codespaces or on your own computer the project files are already there.
+3. Colab already has pandas, scikit-learn, XGBoost and seaborn. If a package is missing, run `%pip install xgboost` in a new cell.
+4. Colab shows text columns with the dtype `object`, while the pinned pandas version shows `str`. The notebooks check for non-numeric columns instead of a specific dtype, so they work with both. Running notebook 01 with pandas 2.2 (which shows `object`) and with the pinned pandas 3.1 produced an identical `hotels_clean.csv`.
+
+---
+
+### Step 1: Run the notebooks
+
+Run the notebooks in order. The notebooks use relative paths, so Jupyter must start in the project folder or in the `notebooks/` folder (this is the default in VS Code and Jupyter).
+
+1. Open `notebooks/01_eda_cleaning.ipynb`, click **Select Kernel** (top right), choose **Python Environments > .venv**, and click **Run All**.
+   - Takes about 15 to 30 seconds.
+   - It writes `data/processed/hotels_clean.csv`. The final checks in the notebook confirm the cleaned data has 84,392 rows and 27 columns, and the last cell prints `Saved shape: (84392, 27)`.
+   - If `data/raw/hotels.csv` is missing, the notebook downloads it from the [TidyTuesday repository](https://github.com/rfordatascience/tidytuesday/blob/main/data/2020/2020-02-11/readme.md). If your network blocks that download, save the file manually as `data/raw/hotels.csv`.
+2. Open `notebooks/02_modeling.ipynb`, select the same `.venv` kernel and click **Run All**.
+   - Takes about 10 to 25 minutes depending on the machine (cross-validation and the random forest are the slow parts).
+   - It ends with the model comparison table and the final results. You should see a validation ROC-AUC of about 0.90 for XGBoost (0.8979 in the committed run) and a test ROC-AUC of about 0.90 (0.9039 in the committed run). Small differences in the third or fourth decimal are normal.
+
+**Run both notebooks from the terminal instead (optional).** With the virtual environment activated:
 
 ```bash
-git clone https://github.com/nabila-natasha/hotel-booking-cancellation-ml.git
-
-cd hotel-booking-cancellation-ml
+cd notebooks
+jupyter nbconvert --to notebook --execute 01_eda_cleaning.ipynb --output-dir ../_check
+jupyter nbconvert --to notebook --execute 02_modeling.ipynb --output-dir ../_check
+cd ..
 ```
 
-### 2. Create and activate a virtual environment
+This runs every cell and stops with an error if any cell fails. The executed copies are saved in `_check/` and your original notebooks are not changed. Delete the `_check/` folder when you are done.
 
-This project was developed and tested with Python 3.14.2 in GitHub Codespaces, and the Docker image also uses Python 3.14. The pinned packages in `requirements.txt` also install and pass the tests on Python 3.13. Use Python 3.13 or newer.
-
-**Windows PowerShell**
-
-```powershell
-python -m venv .venv
-
-.\.venv\Scripts\Activate.ps1
-```
-
-**Linux / macOS / GitHub Codespaces**
-
-```bash
-python -m venv .venv
-
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-For the full project, including notebooks and development dependencies:
-
-```bash
-python -m pip install --upgrade pip
-
-pip install -r requirements.txt
-```
-
-For the prediction application only:
-
-```bash
-pip install -r requirements-api.txt
-```
-
-The `.venv` directory is excluded from version control. Each user should create their own environment.
-
-### 4. Run the notebooks
-
-From the project root:
-
-```bash
-jupyter notebook
-```
-
-Run the notebooks in order:
-
-1. `notebooks/01_eda_cleaning.ipynb` — data cleaning and EDA.
-2. `notebooks/02_modeling.ipynb` — model development, evaluation and tuning.
-
-The cleaned dataset is available under `data/processed/`, so the modelling notebook can also be run independently if that file is present.
-
-Run time: notebook 01 takes about 15 seconds and notebook 02 takes about 10-15 minutes (cross-validation and the random forest are the slow parts).
-
-**Running the notebooks in GitHub Codespaces or from the downloaded ZIP:** open the project folder, create the virtual environment, install `requirements.txt`, and select the `.venv` kernel. The notebooks use relative paths (`../data/...`), so they must be run from the `notebooks/` folder, which is the default in Jupyter.
-
-**Running the notebooks in Google Colab:** uncomment the first code cell of each notebook (`!git clone ...` and `%cd ...`) and run it first. Colab has its own pre-installed package versions, so also run `%pip install xgboost==3.4.1` if XGBoost is missing. Colab shows text columns with the dtype `object`, while the pinned pandas version shows `str`. The notebooks check for non-numeric columns instead of a specific dtype, so they work with both. Running notebook 01 with pandas 2.2 (which shows `object`) and with the pinned pandas 3.1 produced an identical `hotels_clean.csv`.
-
-### 5. Train the model (optional)
-
-If you want to reproduce model training:
+### Step 2: Train the model
 
 ```bash
 python src/train.py
 ```
 
-This trains the model and saves the resulting artifact to:
+This reads `data/processed/hotels_clean.csv`, trains the final XGBoost model and prints `Test AUC: 0.9045`. It saves the model to:
 
 ```text
 models/xgboost_model.bin
 ```
 
-The existing saved artifact can be used to run the application without retraining, provided it is present in the repository.
+The existing saved model can be used to run the application without retraining.
 
 Retraining overwrites `models/xgboost_model.bin`. XGBoost uses random subsampling, so a retrained model can give slightly different probabilities (in the later decimals) from the numbers shown in this README, and a booking close to the 0.5 threshold could change class. This is expected. To restore the original model, run:
 
@@ -453,7 +500,9 @@ Retraining overwrites `models/xgboost_model.bin`. XGBoost uses random subsamplin
 git checkout models/xgboost_model.bin
 ```
 
-### 6. Run the Flask application
+(If you downloaded a ZIP file instead of using git, download the ZIP again to get the original model.)
+
+### Step 3: Run the Flask application
 
 From the project root:
 
@@ -465,11 +514,11 @@ Open the application in your browser:
 
 http://127.0.0.1:9696/
 
-The application provides the interactive booking form and prediction result.
+In Codespaces, click **Open in Browser** in the port 9696 pop-up instead. The application provides the interactive booking form and prediction result.
 
-### 7. Check the health endpoint
+### Step 4: Check the health endpoint
 
-Open another terminal and run:
+Open another terminal (in Codespaces: **Terminal > New Terminal**; activate the environment again if needed) and run:
 
 ```bash
 curl http://127.0.0.1:9696/health
@@ -483,7 +532,7 @@ Expected response:
 }
 ```
 
-### 8. Submit a booking prediction through the API
+### Step 5: Submit a booking prediction through the API
 
 Using the example booking JSON file:
 
@@ -513,7 +562,7 @@ The API returns the cancellation probability, predicted class and classification
 }
 ```
 
-### 9. Run automated tests
+### Step 6: Run automated tests
 
 From the project root:
 
@@ -530,7 +579,7 @@ The tests cover:
 
 ## Docker Containerization
 
-The application is packaged using Docker to provide a reproducible runtime environment.
+The application is packaged using Docker to provide a reproducible runtime environment. Docker is already installed in GitHub Codespaces; on your own computer you need Docker Desktop or Docker Engine (run `docker --version` to check). The notebooks, training script, tests and app do not need Docker.
 
 The `Dockerfile` does the following:
 
