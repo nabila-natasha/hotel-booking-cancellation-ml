@@ -480,27 +480,31 @@ cd ..
 
 This runs every cell and stops with an error if any cell fails. The executed copies are saved in `_check/` and your original notebooks are not changed. Delete the `_check/` folder when you are done.
 
-### Step 2: Train the model
+### Step 2: (Optional) Train the model
+
+The repository includes the previously trained model at `models/xgboost_model.bin`, so retraining is not required to run the application.
+
+To retrain the model, run:
 
 ```bash
 python src/train.py
 ```
 
-This reads `data/processed/hotels_clean.csv`, trains the final XGBoost model and prints `Test AUC: 0.9045`. It saves the model to:
+This script reads `data/processed/hotels_clean.csv`, trains the XGBoost model, prints the test AUC, and saves the updated model to:
 
 ```text
 models/xgboost_model.bin
 ```
 
-The existing saved model can be used to run the application without retraining.
+**Note:** Retraining overwrites the existing model `models/xgboost_model.bin`. XGBoost uses random subsampling, so a retrained model can give slightly different probabilities (in the later decimals) from the numbers shown in this README, and a booking close to the 0.5 threshold could change class.
 
-Retraining overwrites `models/xgboost_model.bin`. XGBoost uses random subsampling, so a retrained model can give slightly different probabilities (in the later decimals) from the numbers shown in this README, and a booking close to the 0.5 threshold could change class. This is expected. To restore the original model, run:
+To restore the original model tracked in Git, run:
 
 ```bash
-git checkout models/xgboost_model.bin
+git restore models/xgboost_model.bin
 ```
 
-(If you downloaded a ZIP file instead of using git, download the ZIP again to get the original model.)
+(If you downloaded the repository as a ZIP file instead of using git, download a fresh copy to restore the original model.)
 
 ### Step 3: Run the Flask application
 
@@ -623,6 +627,12 @@ For GitHub Codespaces, open the forwarded port `9696` from the Ports tab and use
 ### 4. Test the Dockerized API using Postman
 
 The Dockerized application was built and tested in GitHub Codespaces (Docker 29.9.2) and called through Postman using the forwarded port.
+
+**Postman setup note:**
+
+If you are using Postman Web and the **Send** button is disabled, check the selected Postman Agent. If the Desktop Agent is selected but not installed, download and install the Postman Desktop Agent, then open it before sending the request.
+
+Alternatively, check whether the Cloud Agent is available for your request. Agent availability and compatibility may depend on the endpoint and your Postman setup.
 
 **Request configuration:**
 
