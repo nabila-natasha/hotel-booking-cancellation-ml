@@ -629,7 +629,7 @@ The Dockerized application was built and tested in GitHub Codespaces (Docker 29.
 | Setting | Value |
 |---|---|
 | Method | POST |
-| Endpoint | `/predict` |
+| Endpoint | `https://hotel-cancellation-api-dmr5.onrender.com/predict` |
 | Header | `Content-Type: application/json` |
 | Body | Raw JSON booking information |
 
