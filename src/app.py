@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from datetime import date
 
 from predict import load_artifact, predict_cancellation
@@ -29,9 +29,12 @@ def home():
     )
 
 
-@app.route('/booking-prediction', methods=['POST'])
+@app.route('/booking-prediction', methods=['GET', 'POST'])
 def booking_prediction():
     """Process the booking form and display the prediction."""
+
+    if request.method == 'GET':
+        return redirect(url_for('home'))
 
     try:
         booking_date = date.fromisoformat(
