@@ -501,7 +501,7 @@ models/xgboost_model.bin
 To restore the original model tracked in Git, run:
 
 ```bash
-git restore models/xgboost_model.bin
+git restore --source=HEAD --staged --worktree models/xgboost_model.bin
 ```
 
 (If you downloaded the repository as a ZIP file instead of using git, download a fresh copy to restore the original model.)
@@ -626,22 +626,45 @@ For GitHub Codespaces, open the forwarded port `9696` from the Ports tab and use
 
 ### 4. Test the Dockerized API using Postman
 
-The Dockerized application was built and tested in GitHub Codespaces (Docker 29.9.2) and called through Postman using the forwarded port.
+The Dockerized application was built and tested in GitHub Codespaces (Docker 29.9.2). The running container was accessed through the forwarded port `9696` and tested externally using Postman.
 
-**Postman setup note:**
+**Codespaces port visibility**
+
+By default, a forwarded Codespaces port may have Private visibility. To allow Postman or another external client to access the Docker API:
+
+1. Open the **Ports** tab in GitHub Codespaces.
+2. Find port `9696`.
+3. Right-click the port and select **Port Visibility > Public**.
+4. Copy the forwarded address shown for port `9696`.
+
+**Note:** Public visibility allows anyone with the forwarded URL to access the application while the Codespace and container are running. Use this setting only when external access is needed for testing.
+
+**Postman setup note**
 
 If you are using Postman Web and the **Send** button is disabled, check the selected Postman Agent. If the Desktop Agent is selected but not installed, download and install the Postman Desktop Agent, then open it before sending the request.
-
-Alternatively, check whether the Cloud Agent is available for your request. Agent availability and compatibility may depend on the endpoint and your Postman setup.
 
 **Request configuration:**
 
 | Setting | Value |
 |---|---|
 | Method | POST |
-| Endpoint | `https://hotel-cancellation-api-dmr5.onrender.com/predict` |
+| Endpoint | `https://<your-codespaces-forwarded-url>/predict` |
 | Header | `Content-Type: application/json` |
 | Body | Raw JSON booking information |
+
+Replace `<your-codespaces-forwarded-url>` with the current forwarded address for port `9696` shown in the Codespaces Ports tab. The generated address may change if the Codespace is recreated.
+
+Before submitting the prediction request, you can check the application health using:
+
+`https://<your-codespaces-forwarded-url>/health`
+
+The expected response is:
+
+```json
+{
+  "status": "ok"
+}
+```
 
 The same booking payload was also tested using the local Python prediction script:
 
