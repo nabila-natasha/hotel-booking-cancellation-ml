@@ -71,7 +71,7 @@ Available endpoints:
 | `/` | GET | Interactive hotel booking prediction form |
 | `/health` | GET | Application health check |
 | `/predict` | POST | JSON-based cancellation prediction |
-| `/booking-prediction` | POST | Form submission used by the web page (open `/` to use the form) |
+| `/booking-prediction` | POST | Receives the web form and shows the result. Opening it directly in the browser redirects to the form. |
 
 The web interface allows users to enter hotel booking information and submit it to the trained model. The application displays the estimated cancellation probability and predicted booking status.
 
